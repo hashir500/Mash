@@ -1,0 +1,16 @@
+# Virtual Environment
+venv/
+
+# Environment Variables / Secrets
+.env
+
+# Python Cache (Standard omissions)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE and OS files (Optional but recommended)
+.vscode/
+.idea/
+.DS_Store

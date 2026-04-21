@@ -1,0 +1,5 @@
+livekit
+livekit-agents
+livekit-plugins-google
+PyQt6
+python-dotenv
