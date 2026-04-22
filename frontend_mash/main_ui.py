@@ -37,9 +37,12 @@ class AudioPlayer:
 
     def _start(self, sample_rate: int, channels: int):
         cmd = [
-            'aplay', '-f', 'S16_LE',
+            'aplay',
+            '-f', 'S16_LE',
             '-r', str(sample_rate),
             '-c', str(channels),
+            '--buffer-size=24000', # Reduced for lower latency (0.5s)
+            '--avail-min=2400',
             '-',
         ]
         try:
