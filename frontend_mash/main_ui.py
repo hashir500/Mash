@@ -40,11 +40,10 @@ class AudioPlayer:
     def _start(self, sample_rate: int, channels: int):
         cmd = [
             'aplay',
+            '-t', 'raw',
             '-f', 'S16_LE',
             '-r', str(sample_rate),
             '-c', str(channels),
-            '--buffer-size=24000', # Reduced for lower latency (0.5s)
-            '--avail-min=2400',
             '-',
         ]
         try:
@@ -120,9 +119,9 @@ class LiveKitThread(threading.Thread):
         
         if api_key and api_secret:
             self.token = api.AccessToken(api_key, api_secret) \
-                .with_identity("mash-frontend") \
+                .with_identity("mash-ui-new") \
                 .with_name("Mash UI") \
-                .with_grants(api.VideoGrants(room_join=True, can_publish=True, can_publish_data=True, room="mash-room")) \
+                .with_grants(api.VideoGrants(room_join=True, can_publish=True, can_publish_data=True, room="mash-v3")) \
                 .to_jwt()
         else:
             self.token = ""
@@ -178,6 +177,7 @@ class LiveKitThread(threading.Thread):
 
         try:
             await self.room.connect(self.url, self.token)
+            print(f"DEBUG: Frontend connected to room: {self.room.name}")
             # Microphone
             try:
                 self.devices = rtc.MediaDevices()
@@ -241,11 +241,9 @@ class MashWindow(QMainWindow):
         self.old_pos = QPoint()
 
         # Audio output: use aplay subprocess instead of Qt multimedia.
-        # Qt's QAudioSink drops frames silently when its buffer fills.
-        # aplay reads PCM from stdin at playback speed — never drops frames.
         self.audio_player = AudioPlayer(sample_rate=24000, channels=1)
         self.audio_player.beep()
-        print("DEBUG: Diagnostic beep sent.")
+        print("DEBUG: Mash initialized.")
 
         # Start LiveKit — pass audio_player directly so the async thread
         # writes audio without going through the Qt signal/event queue.
@@ -261,7 +259,7 @@ class MashWindow(QMainWindow):
 
         self.central_widget = QFrame()
         self.central_widget.setObjectName("CentralFrame")
-        self.set_border_color("#ff3333") # Default Red (Connecting)
+        self.set_border_color("#ff3333") 
         
         layout = QVBoxLayout(self.central_widget)
         layout.setContentsMargins(5, 5, 5, 5) # Small padding for border visibility
@@ -274,17 +272,15 @@ class MashWindow(QMainWindow):
         
         self.media_player = QMediaPlayer()
         self.media_player.setVideoOutput(self.video_widget)
-        # Suppress media player audio (we handle it via aplay)
-        self.audio_output = QAudioOutput()
-        self.audio_output.setMuted(True)
-        self.media_player.setAudioOutput(self.audio_output)
+        # Suppress media player audio entirely to avoid ALSA conflicts
         
         self.media_player.playbackStateChanged.connect(self.handle_playback_state)
 
         self.setCentralWidget(self.central_widget)
         
-        # Initial expression
-        self.update_expression("distracted")
+        # Defer initial expression to avoid startup hang
+        from PyQt6.QtCore import QTimer
+        QTimer.singleShot(1000, lambda: self.update_expression("distracted"))
 
     def handle_playback_state(self, state):
         if state == QMediaPlayer.PlaybackState.StoppedState:

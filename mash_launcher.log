@@ -1,0 +1,1122 @@
+
+(python3:22893): Gtk-WARNING **: 17:13:12.900: Theme parsing error: gtk.css:1959:16: 'border-spacing' is not a valid property name
+
+(python3:22893): Gtk-WARNING **: 17:13:12.901: Theme parsing error: gtk.css:3272:16: '-gtk-icon-size' is not a valid property name
+
+(python3:22893): Gtk-WARNING **: 17:13:12.901: Theme parsing error: gtk.css:3286:16: '-gtk-icon-size' is not a valid property name
+qt.multimedia.symbolsresolver: Couldn't load va-x11 library
+qt.multimedia.symbolsresolver: Couldn't resolve va-x11 symbols
+qt.multimedia.symbolsresolver: Couldn't load va-drm library
+qt.multimedia.symbolsresolver: Couldn't resolve va-drm symbols
+qt.multimedia.symbolsresolver: Couldn't load va library
+qt.multimedia.symbolsresolver: Couldn't resolve va symbols
+qt.multimedia.symbolsresolver: Couldn't load va(in plugin) library
+qt.multimedia.symbolsresolver: Couldn't resolve va(in plugin) symbols
+qt.multimedia.ffmpeg: Using Qt multimedia with FFmpeg version 7.1.3 LGPL version 2.1 or later
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/home/hashir/Documents/mash/videos/distracted.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf61.1.100
+  Duration: 00:00:08.51, start: 0.000000, bitrate: 6037 kb/s
+  Stream #0:0[0x1](eng): Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 6027 kb/s, 29.97 fps, 29.97 tbr, 30k tbn (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Video Media Handler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.3.100 libx264
+  Stream #0:1[0x2](eng): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 2 kb/s (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Sound Media Handler
+        vendor_id       : [0][0][0][0]
+qt.multimedia.playbackengine.codec: "No HW decoder found"
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+DEBUG:asyncio:Using selector: EpollSelector
+    17:13:14.749 DEBUG    asyncio            Using selector: EpollSelector  
+DEV:livekit.agents:Watching /home/hashir/Documents/mash/backend_agent
+    17:13:14.753 DEV      livekit.agents     Watching                           
+                                             /home/hashir/Documents/mash/back…  
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+DEBUG:asyncio:Using selector: EpollSelector
+    17:13:17.004 DEBUG    asyncio            Using selector: EpollSelector  
+INFO:livekit.agents:starting worker
+    17:13:17.009 INFO     livekit.agents     starting worker  
+                                         {"version": "1.5.4", "rtc-version": 
+"1.1.5"}
+INFO:livekit.agents:plugin registered
+    17:13:17.010 INFO     livekit.agents     plugin registered  
+                                         {"plugin": "livekit.plugins.google", 
+"version": "1.5.4"}
+INFO:livekit.agents:preloading plugins
+    17:13:17.011 INFO     livekit.agents     preloading plugins  
+                                         {"packages": ["livekit.plugins.google",
+"av"]}
+INFO:livekit.agents:HTTP server listening on :40763
+    17:13:17.014 INFO     livekit.agents     HTTP server listening on :40763  
+INFO:livekit.agents:registered worker
+    17:13:17.731 INFO     livekit.agents     registered worker  
+                                         {"agent_name": "", "id": 
+"AW_rbSZ7QoUPXzH", "url": "wss://mash-rf7opift.livekit.cloud", "region": "India 
+West", "protocol": 17}
+WARNING:watchfiles.main:received signal 15, raising KeyboardInterrupt
+    17:14:43.798 WARNING  watchfiles.main    received signal 15, raising        
+                                             KeyboardInterrupt                  
+WARNING:livekit.agents:exiting forcefully
+    17:14:43.801 WARNING  livekit.agents     exiting forcefully  
+
+(python3:23562): Gtk-WARNING **: 17:16:06.936: Theme parsing error: gtk.css:1959:16: 'border-spacing' is not a valid property name
+
+(python3:23562): Gtk-WARNING **: 17:16:06.937: Theme parsing error: gtk.css:3272:16: '-gtk-icon-size' is not a valid property name
+
+(python3:23562): Gtk-WARNING **: 17:16:06.937: Theme parsing error: gtk.css:3286:16: '-gtk-icon-size' is not a valid property name
+qt.multimedia.symbolsresolver: Couldn't load va-x11 library
+qt.multimedia.symbolsresolver: Couldn't resolve va-x11 symbols
+qt.multimedia.symbolsresolver: Couldn't load va-drm library
+qt.multimedia.symbolsresolver: Couldn't resolve va-drm symbols
+qt.multimedia.symbolsresolver: Couldn't load va library
+qt.multimedia.symbolsresolver: Couldn't resolve va symbols
+qt.multimedia.symbolsresolver: Couldn't load va(in plugin) library
+qt.multimedia.symbolsresolver: Couldn't resolve va(in plugin) symbols
+qt.multimedia.ffmpeg: Using Qt multimedia with FFmpeg version 7.1.3 LGPL version 2.1 or later
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/home/hashir/Documents/mash/videos/distracted.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf61.1.100
+  Duration: 00:00:08.51, start: 0.000000, bitrate: 6037 kb/s
+  Stream #0:0[0x1](eng): Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 6027 kb/s, 29.97 fps, 29.97 tbr, 30k tbn (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Video Media Handler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.3.100 libx264
+  Stream #0:1[0x2](eng): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 2 kb/s (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Sound Media Handler
+        vendor_id       : [0][0][0][0]
+qt.multimedia.playbackengine.codec: "No HW decoder found"
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+DEBUG:asyncio:Using selector: EpollSelector
+    17:16:08.660 DEBUG    asyncio            Using selector: EpollSelector  
+DEV:livekit.agents:Watching /home/hashir/Documents/mash/backend_agent
+    17:16:08.664 DEV      livekit.agents     Watching                           
+                                             /home/hashir/Documents/mash/back…  
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+DEBUG:asyncio:Using selector: EpollSelector
+    17:16:11.060 DEBUG    asyncio            Using selector: EpollSelector  
+INFO:livekit.agents:starting worker
+    17:16:11.065 INFO     livekit.agents     starting worker  
+                                         {"version": "1.5.4", "rtc-version": 
+"1.1.5"}
+INFO:livekit.agents:plugin registered
+    17:16:11.067 INFO     livekit.agents     plugin registered  
+                                         {"plugin": "livekit.plugins.google", 
+"version": "1.5.4"}
+INFO:livekit.agents:preloading plugins
+    17:16:11.069 INFO     livekit.agents     preloading plugins  
+                                         {"packages": ["livekit.plugins.google",
+"av"]}
+INFO:livekit.agents:HTTP server listening on :34089
+    17:16:11.073 INFO     livekit.agents     HTTP server listening on :34089  
+INFO:livekit.agents:registered worker
+    17:16:11.733 INFO     livekit.agents     registered worker  
+                                         {"agent_name": "", "id": 
+"AW_CZdTV3DwMR8B", "url": "wss://mash-rf7opift.livekit.cloud", "region": "India 
+West", "protocol": 17}
+WARNING:watchfiles.main:received signal 15, raising KeyboardInterrupt
+    17:16:49.724 WARNING  watchfiles.main    received signal 15, raising        
+                                             KeyboardInterrupt                  
+WARNING:livekit.agents:exiting forcefully
+    17:16:49.726 WARNING  livekit.agents     exiting forcefully  
+
+(python3:23913): Gtk-WARNING **: 17:16:55.284: Theme parsing error: gtk.css:1959:16: 'border-spacing' is not a valid property name
+
+(python3:23913): Gtk-WARNING **: 17:16:55.285: Theme parsing error: gtk.css:3272:16: '-gtk-icon-size' is not a valid property name
+
+(python3:23913): Gtk-WARNING **: 17:16:55.285: Theme parsing error: gtk.css:3286:16: '-gtk-icon-size' is not a valid property name
+qt.multimedia.symbolsresolver: Couldn't load va-x11 library
+qt.multimedia.symbolsresolver: Couldn't resolve va-x11 symbols
+qt.multimedia.symbolsresolver: Couldn't load va-drm library
+qt.multimedia.symbolsresolver: Couldn't resolve va-drm symbols
+qt.multimedia.symbolsresolver: Couldn't load va library
+qt.multimedia.symbolsresolver: Couldn't resolve va symbols
+qt.multimedia.symbolsresolver: Couldn't load va(in plugin) library
+qt.multimedia.symbolsresolver: Couldn't resolve va(in plugin) symbols
+qt.multimedia.ffmpeg: Using Qt multimedia with FFmpeg version 7.1.3 LGPL version 2.1 or later
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/home/hashir/Documents/mash/videos/distracted.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf61.1.100
+  Duration: 00:00:08.51, start: 0.000000, bitrate: 6037 kb/s
+  Stream #0:0[0x1](eng): Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 6027 kb/s, 29.97 fps, 29.97 tbr, 30k tbn (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Video Media Handler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.3.100 libx264
+  Stream #0:1[0x2](eng): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 2 kb/s (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Sound Media Handler
+        vendor_id       : [0][0][0][0]
+qt.multimedia.playbackengine.codec: "No HW decoder found"
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+DEBUG:asyncio:Using selector: EpollSelector
+    17:16:57.049 DEBUG    asyncio            Using selector: EpollSelector  
+DEV:livekit.agents:Watching /home/hashir/Documents/mash/backend_agent
+    17:16:57.054 DEV      livekit.agents     Watching                           
+                                             /home/hashir/Documents/mash/back…  
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+DEBUG:asyncio:Using selector: EpollSelector
+    17:16:59.288 DEBUG    asyncio            Using selector: EpollSelector  
+INFO:livekit.agents:starting worker
+    17:16:59.293 INFO     livekit.agents     starting worker  
+                                         {"version": "1.5.4", "rtc-version": 
+"1.1.5"}
+INFO:livekit.agents:plugin registered
+    17:16:59.294 INFO     livekit.agents     plugin registered  
+                                         {"plugin": "livekit.plugins.google", 
+"version": "1.5.4"}
+INFO:livekit.agents:preloading plugins
+    17:16:59.296 INFO     livekit.agents     preloading plugins  
+                                         {"packages": ["livekit.plugins.google",
+"av"]}
+INFO:livekit.agents:HTTP server listening on :41207
+    17:16:59.299 INFO     livekit.agents     HTTP server listening on :41207  
+INFO:livekit.agents:registered worker
+    17:17:00.056 INFO     livekit.agents     registered worker  
+                                         {"agent_name": "", "id": 
+"AW_VfJZQGmrDFYq", "url": "wss://mash-rf7opift.livekit.cloud", "region": "India 
+West", "protocol": 17}
+INFO:livekit.agents:shutting down worker
+    17:17:52.523 INFO     livekit.agents     shutting down worker  
+                                         {"id": "AW_VfJZQGmrDFYq"}
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+DEBUG:asyncio:Using selector: EpollSelector
+    17:18:00.026 DEBUG    asyncio            Using selector: EpollSelector  
+INFO:livekit.agents:starting worker
+    17:18:00.050 INFO     livekit.agents     starting worker  
+                                         {"version": "1.5.4", "rtc-version": 
+"1.1.5"}
+INFO:livekit.agents:plugin registered
+    17:18:00.055 INFO     livekit.agents     plugin registered  
+                                         {"plugin": "livekit.plugins.google", 
+"version": "1.5.4"}
+INFO:livekit.agents:preloading plugins
+    17:18:00.062 INFO     livekit.agents     preloading plugins  
+                                         {"packages": ["livekit.plugins.google",
+"av"]}
+INFO:livekit.agents:HTTP server listening on :40779
+    17:18:00.075 INFO     livekit.agents     HTTP server listening on :40779  
+INFO:livekit.agents:registered worker
+    17:18:00.951 INFO     livekit.agents     registered worker  
+                                         {"agent_name": "", "id": 
+"AW_oX3R8gF2yimT", "url": "wss://mash-rf7opift.livekit.cloud", "region": "India 
+West", "protocol": 17}
+WARNING:watchfiles.main:received signal 15, raising KeyboardInterrupt
+    17:18:13.089 WARNING  watchfiles.main    received signal 15, raising        
+                                             KeyboardInterrupt                  
+WARNING:livekit.agents:exiting forcefully
+    17:18:13.092 WARNING  livekit.agents     exiting forcefully  
+
+(python3:24303): Gtk-WARNING **: 17:18:13.982: Theme parsing error: gtk.css:1959:16: 'border-spacing' is not a valid property name
+
+(python3:24303): Gtk-WARNING **: 17:18:13.985: Theme parsing error: gtk.css:3272:16: '-gtk-icon-size' is not a valid property name
+
+(python3:24303): Gtk-WARNING **: 17:18:13.985: Theme parsing error: gtk.css:3286:16: '-gtk-icon-size' is not a valid property name
+qt.multimedia.symbolsresolver: Couldn't load va-x11 library
+qt.multimedia.symbolsresolver: Couldn't resolve va-x11 symbols
+qt.multimedia.symbolsresolver: Couldn't load va-drm library
+qt.multimedia.symbolsresolver: Couldn't resolve va-drm symbols
+qt.multimedia.symbolsresolver: Couldn't load va library
+qt.multimedia.symbolsresolver: Couldn't resolve va symbols
+qt.multimedia.symbolsresolver: Couldn't load va(in plugin) library
+qt.multimedia.symbolsresolver: Couldn't resolve va(in plugin) symbols
+qt.multimedia.ffmpeg: Using Qt multimedia with FFmpeg version 7.1.3 LGPL version 2.1 or later
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/home/hashir/Documents/mash/videos/distracted.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf61.1.100
+  Duration: 00:00:08.51, start: 0.000000, bitrate: 6037 kb/s
+  Stream #0:0[0x1](eng): Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 6027 kb/s, 29.97 fps, 29.97 tbr, 30k tbn (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Video Media Handler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.3.100 libx264
+  Stream #0:1[0x2](eng): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 2 kb/s (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Sound Media Handler
+        vendor_id       : [0][0][0][0]
+qt.multimedia.playbackengine.codec: "No HW decoder found"
+Usage: agent.py dev [OPTIONS]
+Try 'agent.py dev --help' for help.
+╭─ Error ──────────────────────────────────────────────────────────────────────╮
+│ No such option: --room                                                       │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+(python3:24595): Gtk-WARNING **: 17:19:13.719: Theme parsing error: gtk.css:1959:16: 'border-spacing' is not a valid property name
+
+(python3:24595): Gtk-WARNING **: 17:19:13.722: Theme parsing error: gtk.css:3272:16: '-gtk-icon-size' is not a valid property name
+
+(python3:24595): Gtk-WARNING **: 17:19:13.723: Theme parsing error: gtk.css:3286:16: '-gtk-icon-size' is not a valid property name
+qt.multimedia.symbolsresolver: Couldn't load va-x11 library
+qt.multimedia.symbolsresolver: Couldn't resolve va-x11 symbols
+qt.multimedia.symbolsresolver: Couldn't load va-drm library
+qt.multimedia.symbolsresolver: Couldn't resolve va-drm symbols
+qt.multimedia.symbolsresolver: Couldn't load va library
+qt.multimedia.symbolsresolver: Couldn't resolve va symbols
+qt.multimedia.symbolsresolver: Couldn't load va(in plugin) library
+qt.multimedia.symbolsresolver: Couldn't resolve va(in plugin) symbols
+qt.multimedia.ffmpeg: Using Qt multimedia with FFmpeg version 7.1.3 LGPL version 2.1 or later
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/home/hashir/Documents/mash/videos/distracted.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf61.1.100
+  Duration: 00:00:08.51, start: 0.000000, bitrate: 6037 kb/s
+  Stream #0:0[0x1](eng): Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 6027 kb/s, 29.97 fps, 29.97 tbr, 30k tbn (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Video Media Handler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.3.100 libx264
+  Stream #0:1[0x2](eng): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 2 kb/s (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Sound Media Handler
+        vendor_id       : [0][0][0][0]
+qt.multimedia.playbackengine.codec: "No HW decoder found"
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+DEBUG:asyncio:Using selector: EpollSelector
+    17:19:17.410 DEBUG    asyncio            Using selector: EpollSelector  
+DEV:livekit.agents:Watching /home/hashir/Documents/mash/backend_agent
+    17:19:17.418 DEV      livekit.agents     Watching                           
+                                             /home/hashir/Documents/mash/back…  
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+DEBUG:asyncio:Using selector: EpollSelector
+    17:19:21.699 DEBUG    asyncio            Using selector: EpollSelector  
+INFO:livekit.agents:starting worker
+    17:19:21.708 INFO     livekit.agents     starting worker  
+                                         {"version": "1.5.4", "rtc-version": 
+"1.1.5"}
+INFO:livekit.agents:plugin registered
+    17:19:21.711 INFO     livekit.agents     plugin registered  
+                                         {"plugin": "livekit.plugins.google", 
+"version": "1.5.4"}
+INFO:livekit.agents:preloading plugins
+    17:19:21.713 INFO     livekit.agents     preloading plugins  
+                                         {"packages": ["livekit.plugins.google",
+"av"]}
+INFO:livekit.agents:HTTP server listening on :41317
+    17:19:21.719 INFO     livekit.agents     HTTP server listening on :41317  
+INFO:livekit.agents:registered worker
+    17:19:22.422 INFO     livekit.agents     registered worker  
+                                         {"agent_name": "", "id": 
+"AW_NwXhz6jUHYEc", "url": "wss://mash-rf7opift.livekit.cloud", "region": "India 
+West", "protocol": 17}
+WARNING:watchfiles.main:received signal 15, raising KeyboardInterrupt
+    17:20:51.351 WARNING  watchfiles.main    received signal 15, raising        
+                                             KeyboardInterrupt                  
+WARNING:livekit.agents:exiting forcefully
+    17:20:51.353 WARNING  livekit.agents     exiting forcefully  
+
+(python3:25013): Gtk-WARNING **: 17:20:51.919: Theme parsing error: gtk.css:1959:16: 'border-spacing' is not a valid property name
+
+(python3:25013): Gtk-WARNING **: 17:20:51.921: Theme parsing error: gtk.css:3272:16: '-gtk-icon-size' is not a valid property name
+
+(python3:25013): Gtk-WARNING **: 17:20:51.921: Theme parsing error: gtk.css:3286:16: '-gtk-icon-size' is not a valid property name
+qt.multimedia.symbolsresolver: Couldn't load va-x11 library
+qt.multimedia.symbolsresolver: Couldn't resolve va-x11 symbols
+qt.multimedia.symbolsresolver: Couldn't load va-drm library
+qt.multimedia.symbolsresolver: Couldn't resolve va-drm symbols
+qt.multimedia.symbolsresolver: Couldn't load va library
+qt.multimedia.symbolsresolver: Couldn't resolve va symbols
+qt.multimedia.symbolsresolver: Couldn't load va(in plugin) library
+qt.multimedia.symbolsresolver: Couldn't resolve va(in plugin) symbols
+qt.multimedia.ffmpeg: Using Qt multimedia with FFmpeg version 7.1.3 LGPL version 2.1 or later
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/home/hashir/Documents/mash/videos/distracted.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf61.1.100
+  Duration: 00:00:08.51, start: 0.000000, bitrate: 6037 kb/s
+  Stream #0:0[0x1](eng): Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 6027 kb/s, 29.97 fps, 29.97 tbr, 30k tbn (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Video Media Handler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.3.100 libx264
+  Stream #0:1[0x2](eng): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 2 kb/s (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Sound Media Handler
+        vendor_id       : [0][0][0][0]
+qt.multimedia.playbackengine.codec: "No HW decoder found"
+Usage: agent.py start [OPTIONS]
+Try 'agent.py start --help' for help.
+╭─ Error ──────────────────────────────────────────────────────────────────────╮
+│ No such option: --room                                                       │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+(python3:25390): Gtk-WARNING **: 17:22:22.125: Theme parsing error: gtk.css:1959:16: 'border-spacing' is not a valid property name
+
+(python3:25390): Gtk-WARNING **: 17:22:22.127: Theme parsing error: gtk.css:3272:16: '-gtk-icon-size' is not a valid property name
+
+(python3:25390): Gtk-WARNING **: 17:22:22.127: Theme parsing error: gtk.css:3286:16: '-gtk-icon-size' is not a valid property name
+qt.multimedia.symbolsresolver: Couldn't load va-x11 library
+qt.multimedia.symbolsresolver: Couldn't resolve va-x11 symbols
+qt.multimedia.symbolsresolver: Couldn't load va-drm library
+qt.multimedia.symbolsresolver: Couldn't resolve va-drm symbols
+qt.multimedia.symbolsresolver: Couldn't load va library
+qt.multimedia.symbolsresolver: Couldn't resolve va symbols
+qt.multimedia.symbolsresolver: Couldn't load va(in plugin) library
+qt.multimedia.symbolsresolver: Couldn't resolve va(in plugin) symbols
+qt.multimedia.ffmpeg: Using Qt multimedia with FFmpeg version 7.1.3 LGPL version 2.1 or later
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/home/hashir/Documents/mash/videos/distracted.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf61.1.100
+  Duration: 00:00:08.51, start: 0.000000, bitrate: 6037 kb/s
+  Stream #0:0[0x1](eng): Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 6027 kb/s, 29.97 fps, 29.97 tbr, 30k tbn (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Video Media Handler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.3.100 libx264
+  Stream #0:1[0x2](eng): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 2 kb/s (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Sound Media Handler
+        vendor_id       : [0][0][0][0]
+qt.multimedia.playbackengine.codec: "No HW decoder found"
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+DEBUG:asyncio:Using selector: EpollSelector
+    17:22:23.825 DEBUG    asyncio            Using selector: EpollSelector  
+DEV:livekit.agents:Watching /home/hashir/Documents/mash/backend_agent
+    17:22:23.828 DEV      livekit.agents     Watching                           
+                                             /home/hashir/Documents/mash/back…  
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+DEBUG:asyncio:Using selector: EpollSelector
+    17:22:26.412 DEBUG    asyncio            Using selector: EpollSelector  
+INFO:livekit.agents:starting worker
+    17:22:26.419 INFO     livekit.agents     starting worker  
+                                         {"version": "1.5.4", "rtc-version": 
+"1.1.5"}
+INFO:livekit.agents:plugin registered
+    17:22:26.420 INFO     livekit.agents     plugin registered  
+                                         {"plugin": "livekit.plugins.google", 
+"version": "1.5.4"}
+INFO:livekit.agents:preloading plugins
+    17:22:26.421 INFO     livekit.agents     preloading plugins  
+                                         {"packages": ["livekit.plugins.google",
+"av"]}
+INFO:livekit.agents:HTTP server listening on :39751
+    17:22:26.425 INFO     livekit.agents     HTTP server listening on :39751  
+INFO:livekit.agents:registered worker
+    17:22:27.092 INFO     livekit.agents     registered worker  
+                                         {"agent_name": "", "id": 
+"AW_8GdrVGdMvxFi", "url": "wss://mash-rf7opift.livekit.cloud", "region": "India 
+West", "protocol": 17}
+WARNING:watchfiles.main:received signal 15, raising KeyboardInterrupt
+    17:23:03.987 WARNING  watchfiles.main    received signal 15, raising        
+                                             KeyboardInterrupt                  
+WARNING:livekit.agents:exiting forcefully
+    17:23:03.991 WARNING  livekit.agents     exiting forcefully  
+
+(python3:25832): Gtk-WARNING **: 17:23:54.750: Theme parsing error: gtk.css:1959:16: 'border-spacing' is not a valid property name
+
+(python3:25832): Gtk-WARNING **: 17:23:54.751: Theme parsing error: gtk.css:3272:16: '-gtk-icon-size' is not a valid property name
+
+(python3:25832): Gtk-WARNING **: 17:23:54.751: Theme parsing error: gtk.css:3286:16: '-gtk-icon-size' is not a valid property name
+qt.multimedia.symbolsresolver: Couldn't load va-x11 library
+qt.multimedia.symbolsresolver: Couldn't resolve va-x11 symbols
+qt.multimedia.symbolsresolver: Couldn't load va-drm library
+qt.multimedia.symbolsresolver: Couldn't resolve va-drm symbols
+qt.multimedia.symbolsresolver: Couldn't load va library
+qt.multimedia.symbolsresolver: Couldn't resolve va symbols
+qt.multimedia.symbolsresolver: Couldn't load va(in plugin) library
+qt.multimedia.symbolsresolver: Couldn't resolve va(in plugin) symbols
+qt.multimedia.ffmpeg: Using Qt multimedia with FFmpeg version 7.1.3 LGPL version 2.1 or later
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/home/hashir/Documents/mash/videos/distracted.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf61.1.100
+  Duration: 00:00:08.51, start: 0.000000, bitrate: 6037 kb/s
+  Stream #0:0[0x1](eng): Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 6027 kb/s, 29.97 fps, 29.97 tbr, 30k tbn (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Video Media Handler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.3.100 libx264
+  Stream #0:1[0x2](eng): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 2 kb/s (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Sound Media Handler
+        vendor_id       : [0][0][0][0]
+qt.multimedia.playbackengine.codec: "No HW decoder found"
+    17:23:56.549 DEBUG    asyncio            Using selector: EpollSelector  
+    17:23:56.554 DEV      livekit.agents     Watching                           
+                                             /home/hashir/Documents/mash/back…  
+    17:23:58.812 DEBUG    asyncio            Using selector: EpollSelector  
+    17:23:58.817 INFO     livekit.agents     starting worker  
+                                         {"version": "1.5.4", "rtc-version": 
+"1.1.5"}
+    17:23:58.819 INFO     livekit.agents     plugin registered  
+                                         {"plugin": "livekit.plugins.google", 
+"version": "1.5.4"}
+    17:23:58.820 INFO     livekit.agents     preloading plugins  
+                                         {"packages": ["livekit.plugins.google",
+"av"]}
+    17:23:58.823 INFO     livekit.agents     HTTP server listening on :34091  
+    17:23:59.641 INFO     livekit.agents     registered worker  
+                                         {"agent_name": "", "id": 
+"AW_fTuMkn2zFLcK", "url": "wss://mash-rf7opift.livekit.cloud", "region": "India 
+West", "protocol": 17}
+    17:24:10.817 WARNING  watchfiles.main    received signal 15, raising        
+                                             KeyboardInterrupt                  
+    17:24:10.819 WARNING  livekit.agents     exiting forcefully  
+
+(python3:26595): Gtk-WARNING **: 17:27:55.667: Theme parsing error: gtk.css:1959:16: 'border-spacing' is not a valid property name
+
+(python3:26595): Gtk-WARNING **: 17:27:55.669: Theme parsing error: gtk.css:3272:16: '-gtk-icon-size' is not a valid property name
+
+(python3:26595): Gtk-WARNING **: 17:27:55.669: Theme parsing error: gtk.css:3286:16: '-gtk-icon-size' is not a valid property name
+qt.multimedia.symbolsresolver: Couldn't load va-x11 library
+qt.multimedia.symbolsresolver: Couldn't resolve va-x11 symbols
+qt.multimedia.symbolsresolver: Couldn't load va-drm library
+qt.multimedia.symbolsresolver: Couldn't resolve va-drm symbols
+qt.multimedia.symbolsresolver: Couldn't load va library
+qt.multimedia.symbolsresolver: Couldn't resolve va symbols
+qt.multimedia.symbolsresolver: Couldn't load va(in plugin) library
+qt.multimedia.symbolsresolver: Couldn't resolve va(in plugin) symbols
+qt.multimedia.ffmpeg: Using Qt multimedia with FFmpeg version 7.1.3 LGPL version 2.1 or later
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/home/hashir/Documents/mash/videos/distracted.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf61.1.100
+  Duration: 00:00:08.51, start: 0.000000, bitrate: 6037 kb/s
+  Stream #0:0[0x1](eng): Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 6027 kb/s, 29.97 fps, 29.97 tbr, 30k tbn (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Video Media Handler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.3.100 libx264
+  Stream #0:1[0x2](eng): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 2 kb/s (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Sound Media Handler
+        vendor_id       : [0][0][0][0]
+qt.multimedia.playbackengine.codec: "No HW decoder found"
+INFO:mash-agent:Mash connecting to room mash-v3...
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+INFO:livekit:livekit_api::signal_client::signal_stream:103:livekit_api::signal_client::signal_stream - connecting to wss://mash-rf7opift.livekit.cloud/rtc?sdk=python&os=Ubuntu&os_version=24.4.0&protocol=16&auto_subscribe=1&adaptive_stream=0&version=1.1.5
+INFO:livekit.agents:received job request
+    17:27:59.305 INFO     livekit.agents     received job request  
+                                         {"job_id": "AJ_hHYPvVxGoeqZ", 
+"dispatch_id": "AD_Ms4pRmXGYLqw", "room": "mash-v3", "room_id": 
+"RM_JLSMHDzULRo7", "agent_name": "", "resuming": false, "enable_recording": 
+false}
+DEBUG:livekit.agents:received assignment
+    17:27:59.483 DEBUG    livekit.agents     received assignment  
+                                         {"agent_name": "", "room_id": 
+"RM_JLSMHDzULRo7", "room": "mash-v3", "job_id": "AJ_hHYPvVxGoeqZ", 
+"dispatch_id": "AD_Ms4pRmXGYLqw", "enable_recording": false}
+WARNING:livekit.agents:no warmed process available for job, waiting for one to be created
+    17:27:59.488 WARNING  livekit.agents     no warmed process available for    
+                                             job, waiting for one to be         
+                                             created                            
+                                         {"job_id": "AJ_hHYPvVxGoeqZ"}
+INFO:mash-agent:Mash successfully joined room: mash-v3
+Traceback (most recent call last):
+ERROR:livekit:error putting to queue: Event loop is closed
+  File "/home/hashir/Documents/mash/backend_agent/agent.py", line 154, in <module>
+    asyncio.run(main())
+ERROR:livekit:error putting to queue: Event loop is closed
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/hashir/Documents/mash/backend_agent/agent.py", line 98, in main
+    fnc_ctx = MashActions(room.local_participant)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/Documents/mash/backend_agent/agent.py", line 51, in __init__
+    super().__init__()
+TypeError: ToolContext.__init__() missing 1 required positional argument: 'tools'
+ERROR:livekit:error putting to queue: Event loop is closed
+ERROR:livekit:error putting to queue: Event loop is closed
+ERROR:livekit:error putting to queue: Event loop is closed
+INFO:livekit.agents:initializing process
+    17:28:01.831 INFO     livekit.agents     initializing process {"pid": 26770}
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/forkserver.py", line 274, in main
+    code = _serve_one(child_r, fds,
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/forkserver.py", line 313, in _serve_one
+    code = spawn._main(child_r, parent_sentinel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/spawn.py", line 132, in _main
+    self = reduction.pickle.load(from_parent)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: Can't get attribute 'entrypoint' on <module '__mp_main__' from '/home/hashir/Documents/mash/backend_agent/agent.py'>
+ERROR:livekit.agents:error initializing process
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/livekit/agents/utils/aio/duplex_unix.py", line 35, in recv_bytes
+    len_bytes = await self._reader.readexactly(4)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/streams.py", line 752, in readexactly
+    await self._wait_for_data('readexactly')
+  File "/usr/lib/python3.12/asyncio/streams.py", line 545, in _wait_for_data
+    await self._waiter
+  File "/usr/lib/python3.12/asyncio/selector_events.py", line 1013, in _read_ready__data_received
+    data = self._sock.recv(self.max_size)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [Errno 104] Connection reset by peer
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/livekit/agents/ipc/proc_pool.py", line 209, in _proc_spawn_task
+    await proc.initialize()
+  File "/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/livekit/agents/ipc/supervised_proc.py", line 238, in initialize
+    init_res = await asyncio.wait_for(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/livekit/agents/ipc/channel.py", line 47, in arecv_message
+    return _read_message(await dplx.recv_bytes(), messages)
+                         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/livekit/agents/utils/aio/duplex_unix.py", line 43, in recv_bytes
+    raise DuplexClosed() from e
+livekit.agents.utils.aio.duplex_unix.DuplexClosed
+    17:28:01.852 ERROR    livekit.agents     error initializing process  
+                                         {"pid": 26770}
+Traceback (most recent call last):
+  File 
+"/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/livekit/agents/ut
+ils/aio/duplex_unix.py", line 35, in recv_bytes
+    len_bytes = await self._reader.readexactly(4)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/streams.py", line 752, in readexactly
+    await self._wait_for_data('readexactly')
+  File "/usr/lib/python3.12/asyncio/streams.py", line 545, in _wait_for_data
+    await self._waiter
+  File "/usr/lib/python3.12/asyncio/selector_events.py", line 1013, in 
+_read_ready__data_received
+    data = self._sock.recv(self.max_size)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [Errno 104] Connection reset by peer
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File 
+"/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/livekit/agents/ip
+c/proc_pool.py", line 209, in _proc_spawn_task
+    await proc.initialize()
+  File 
+"/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/livekit/agents/ip
+c/supervised_proc.py", line 238, in initialize
+    init_res = await asyncio.wait_for(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File 
+"/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/livekit/agents/ip
+c/channel.py", line 47, in arecv_message
+    return _read_message(await dplx.recv_bytes(), messages)
+                         ^^^^^^^^^^^^^^^^^^^^^^^
+  File 
+"/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/livekit/agents/ut
+ils/aio/duplex_unix.py", line 43, in recv_bytes
+    raise DuplexClosed() from e
+livekit.agents.utils.aio.duplex_unix.DuplexClosed
+ERROR:livekit.agents:process exited with non-zero exit code 1
+    17:28:01.856 ERROR    livekit.agents     process exited with non-zero exit  
+                                             code 1                             
+                                         {"pid": 26770}
+ERROR:livekit.agents:process did not ack shutdown in time, killing process
+    17:28:11.856 ERROR    livekit.agents     process did not ack shutdown in    
+                                             time, killing process              
+                                         {"pid": 26770}
+
+(python3:27080): Gtk-WARNING **: 17:29:56.792: Theme parsing error: gtk.css:1959:16: 'border-spacing' is not a valid property name
+
+(python3:27080): Gtk-WARNING **: 17:29:56.793: Theme parsing error: gtk.css:3272:16: '-gtk-icon-size' is not a valid property name
+
+(python3:27080): Gtk-WARNING **: 17:29:56.793: Theme parsing error: gtk.css:3286:16: '-gtk-icon-size' is not a valid property name
+qt.multimedia.symbolsresolver: Couldn't load va-x11 library
+qt.multimedia.symbolsresolver: Couldn't resolve va-x11 symbols
+qt.multimedia.symbolsresolver: Couldn't load va-drm library
+qt.multimedia.symbolsresolver: Couldn't resolve va-drm symbols
+qt.multimedia.symbolsresolver: Couldn't load va library
+qt.multimedia.symbolsresolver: Couldn't resolve va symbols
+qt.multimedia.symbolsresolver: Couldn't load va(in plugin) library
+qt.multimedia.symbolsresolver: Couldn't resolve va(in plugin) symbols
+qt.multimedia.ffmpeg: Using Qt multimedia with FFmpeg version 7.1.3 LGPL version 2.1 or later
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/home/hashir/Documents/mash/videos/distracted.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf61.1.100
+  Duration: 00:00:08.51, start: 0.000000, bitrate: 6037 kb/s
+  Stream #0:0[0x1](eng): Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 6027 kb/s, 29.97 fps, 29.97 tbr, 30k tbn (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Video Media Handler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.3.100 libx264
+  Stream #0:1[0x2](eng): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 2 kb/s (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Sound Media Handler
+        vendor_id       : [0][0][0][0]
+qt.multimedia.playbackengine.codec: "No HW decoder found"
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+DEBUG:asyncio:Using selector: EpollSelector
+    17:29:58.596 DEBUG    asyncio            Using selector: EpollSelector  
+DEV:livekit.agents:Watching /home/hashir/Documents/mash/backend_agent
+    17:29:58.601 DEV      livekit.agents     Watching                           
+                                             /home/hashir/Documents/mash/back…  
+INFO:livekit.agents:received job request
+    17:29:58.919 INFO     livekit.agents     received job request  
+                                         {"job_id": "AJ_jFNpedmJ8WNB", 
+"dispatch_id": "AD_EmzGevSUEFWQ", "room": "mash-v3", "room_id": 
+"RM_hAwuYosXPLcB", "agent_name": "", "resuming": false, "enable_recording": 
+false}
+DEBUG:livekit.agents:received assignment
+    17:29:59.071 DEBUG    livekit.agents     received assignment  
+                                         {"agent_name": "", "room_id": 
+"RM_hAwuYosXPLcB", "room": "mash-v3", "job_id": "AJ_jFNpedmJ8WNB", 
+"dispatch_id": "AD_EmzGevSUEFWQ", "enable_recording": false}
+WARNING:livekit.agents:no warmed process available for job, waiting for one to be created
+    17:29:59.072 WARNING  livekit.agents     no warmed process available for    
+                                             job, waiting for one to be         
+                                             created                            
+                                         {"job_id": "AJ_jFNpedmJ8WNB"}
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+DEBUG:asyncio:Using selector: EpollSelector
+    17:30:01.174 DEBUG    asyncio            Using selector: EpollSelector  
+INFO:livekit.agents:starting worker
+    17:30:01.179 INFO     livekit.agents     starting worker  
+                                         {"version": "1.5.4", "rtc-version": 
+"1.1.5"}
+INFO:livekit.agents:plugin registered
+    17:30:01.181 INFO     livekit.agents     plugin registered  
+                                         {"plugin": "livekit.plugins.google", 
+"version": "1.5.4"}
+INFO:livekit.agents:preloading plugins
+    17:30:01.182 INFO     livekit.agents     preloading plugins  
+                                         {"packages": ["livekit.plugins.google",
+"av"]}
+INFO:livekit.agents:HTTP server listening on :41859
+    17:30:01.185 INFO     livekit.agents     HTTP server listening on :41859  
+INFO:livekit.agents:initializing process
+    17:30:01.816 INFO     livekit.agents     initializing process {"pid": 27269}
+INFO:livekit.agents:registered worker
+    17:30:01.824 INFO     livekit.agents     registered worker  
+                                         {"agent_name": "", "id": 
+"AW_Ytue8XVaGKB3", "url": "wss://mash-rf7opift.livekit.cloud", "region": "India 
+West", "protocol": 17}
+INFO:livekit.agents:process initialized
+DEBUG:asyncio:Using selector: EpollSelector
+    17:30:01.836 INFO     livekit.agents     process initialized  
+                                         {"pid": 27269, "elapsed_time": 0.02}
+DEBUG:asyncio:Using selector: EpollSelector
+                 DEBUG    asyncio            Using selector: EpollSelector  
+                                  {"pid": 27269}
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:mash-agent:CONNECTING to room: mash-v3
+    17:30:01.846 INFO     livekit            livekit_ffi::server:153:livekit_…  
+                                             - initializing ffi server          
+                                             v0.12.52                           
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+    17:30:01.847 INFO     livekit            livekit_ffi::cabi:50:livekit_ffi…  
+                                             - initializing ffi server          
+                                             v0.12.52                           
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+INFO:mash-agent:CONNECTING to room: mash-v3
+    17:30:01.849 INFO     mash-agent         CONNECTING to room: mash-v3  
+                                     {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB",
+"room_id": "RM_hAwuYosXPLcB"}
+INFO:livekit:livekit_api::signal_client::signal_stream:103:livekit_api::signal_client::signal_stream - connecting to wss://mash-rf7opift.livekit.cloud/rtc?sdk=python&os=Ubuntu&os_version=24.4.0&protocol=16&auto_subscribe=0&adaptive_stream=0&version=1.1.5
+INFO:livekit:livekit_api::signal_client::signal_stream:103:livekit_api::signal_client::signal_stream - connecting to wss://mash-rf7opift.livekit.cloud/rtc?sdk=python&os=Ubuntu&os_version=24.4.0&protocol=16&auto_subscribe=0&adaptive_stream=0&version=1.1.5
+    17:30:01.861 INFO     livekit            livekit_api::signal_client::sign…  
+                                             - connecting to                    
+                                             wss://mash-rf7opift.livekit.clou…  
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:rustls::anchors:150:rustls::anchors - add_parsable_certificates processed 146 valid and 0 invalid certs
+DEBUG:livekit:tokio_tungstenite::tls::encryption::rustls:103:tokio_tungstenite::tls::encryption::rustls - Added 146/146 native root certificates (ignored 0)
+DEBUG:livekit:rustls::anchors:150:rustls::anchors - add_parsable_certificates processed 146 valid and 0 invalid certs
+DEBUG:livekit:rustls::client::hs:73:rustls::client::hs - No cached session for DnsName("mash-rf7opift.livekit.cloud")
+DEBUG:livekit:rustls::client::hs:132:rustls::client::hs - Not resuming any session
+    17:30:02.020 DEBUG    livekit            rustls::anchors:150:rustls::anch…  
+                                             - add_parsable_certificates        
+                                             processed 146 valid and 0 invalid  
+                                             certs                              
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:tokio_tungstenite::tls::encryption::rustls:103:tokio_tungstenite::tls::encryption::rustls - Added 146/146 native root certificates (ignored 0)
+                 DEBUG    livekit            tokio_tungstenite::tls::encrypti…  
+                                             - Added 146/146 native root        
+                                             certificates (ignored 0)           
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:rustls::client::hs:73:rustls::client::hs - No cached session for DnsName("mash-rf7opift.livekit.cloud")
+                 DEBUG    livekit            rustls::client::hs:73:rustls::cl…  
+                                             - No cached session for            
+                                             DnsName("mash-rf7opift.livekit.c…  
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:rustls::client::hs:132:rustls::client::hs - Not resuming any session
+    17:30:02.021 DEBUG    livekit            rustls::client::hs:132:rustls::c…  
+                                             - Not resuming any session         
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:rustls::client::hs:615:rustls::client::hs - Using ciphersuite TLS13_AES_128_GCM_SHA256
+DEBUG:livekit:rustls::client::tls13:142:rustls::client::tls13 - Not resuming
+DEBUG:livekit:rustls::client::hs:615:rustls::client::hs - Using ciphersuite TLS13_AES_128_GCM_SHA256
+DEBUG:livekit:rustls::client::tls13:381:rustls::client::tls13 - TLS1.3 encrypted extensions: []
+DEBUG:livekit:rustls::client::hs:472:rustls::client::hs - ALPN protocol is None
+    17:30:02.173 DEBUG    livekit            rustls::client::hs:615:rustls::c…  
+                                             - Using ciphersuite                
+                                             TLS13_AES_128_GCM_SHA256           
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:rustls::client::tls13:142:rustls::client::tls13 - Not resuming
+                 DEBUG    livekit            rustls::client::tls13:142:rustls…  
+                                             - Not resuming                     
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:rustls::client::tls13:381:rustls::client::tls13 - TLS1.3 encrypted extensions: []
+    17:30:02.174 DEBUG    livekit            rustls::client::tls13:381:rustls…  
+                                             - TLS1.3 encrypted extensions: []  
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:rustls::client::hs:472:rustls::client::hs - ALPN protocol is None
+                 DEBUG    livekit            rustls::client::hs:472:rustls::c…  
+                                             - ALPN protocol is None            
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+WARNING:livekit:livekit_api::signal_client:287:livekit_api::signal_client - signal connection failed on v0 path: Timeout("signal connection timed out")
+WARNING:livekit:livekit_api::signal_client:287:livekit_api::signal_client - signal connection failed on v0 path: Timeout("signal connection timed out")
+DEBUG:livekit:reqwest::connect:929:reqwest::connect - starting new connection: https://mash-rf7opift.livekit.cloud/
+    17:30:06.976 WARNING  livekit            livekit_api::signal_client:287:l…  
+                                             - signal connection failed on v0   
+                                             path: Timeout("signal connection   
+                                             timed out")                        
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:reqwest::connect:929:reqwest::connect - starting new connection: https://mash-rf7opift.livekit.cloud/
+    17:30:06.977 DEBUG    livekit            reqwest::connect:929:reqwest::co…  
+                                             - starting new connection:         
+                                             https://mash-rf7opift.livekit.cl…  
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:reqwest::connect:929:reqwest::connect - starting new connection: https://mash-rf7opift.livekit.cloud/
+DEBUG:livekit:reqwest::connect:929:reqwest::connect - starting new connection: https://mash-rf7opift.livekit.cloud/
+    17:30:07.536 DEBUG    livekit            reqwest::connect:929:reqwest::co…  
+                                             - starting new connection:         
+                                             https://mash-rf7opift.livekit.cl…  
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+INFO:livekit:livekit_api::signal_client:182:livekit_api::signal_client - fallback connection to: https://mash-rf7opift.omumbai1a.production.livekit.cloud
+INFO:livekit:livekit_api::signal_client:182:livekit_api::signal_client - fallback connection to: https://mash-rf7opift.omumbai1a.production.livekit.cloud
+    17:30:09.599 INFO     livekit            livekit_api::signal_client:182:l…  
+                                             - fallback connection to:          
+                                             https://mash-rf7opift.omumbai1a.…  
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+INFO:livekit:livekit_api::signal_client::signal_stream:103:livekit_api::signal_client::signal_stream - connecting to wss://mash-rf7opift.omumbai1a.production.livekit.cloud/rtc?sdk=python&os=Ubuntu&os_version=24.4.0&protocol=16&auto_subscribe=0&adaptive_stream=0&version=1.1.5
+INFO:livekit:livekit_api::signal_client::signal_stream:103:livekit_api::signal_client::signal_stream - connecting to wss://mash-rf7opift.omumbai1a.production.livekit.cloud/rtc?sdk=python&os=Ubuntu&os_version=24.4.0&protocol=16&auto_subscribe=0&adaptive_stream=0&version=1.1.5
+    17:30:09.621 INFO     livekit            livekit_api::signal_client::sign…  
+                                             - connecting to                    
+                                             wss://mash-rf7opift.omumbai1a.pr…  
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:rustls::anchors:150:rustls::anchors - add_parsable_certificates processed 146 valid and 0 invalid certs
+DEBUG:livekit:tokio_tungstenite::tls::encryption::rustls:103:tokio_tungstenite::tls::encryption::rustls - Added 146/146 native root certificates (ignored 0)
+DEBUG:livekit:rustls::client::hs:73:rustls::client::hs - No cached session for DnsName("mash-rf7opift.omumbai1a.production.livekit.cloud")
+DEBUG:livekit:rustls::anchors:150:rustls::anchors - add_parsable_certificates processed 146 valid and 0 invalid certs
+DEBUG:livekit:rustls::client::hs:132:rustls::client::hs - Not resuming any session
+    17:30:10.441 DEBUG    livekit            rustls::anchors:150:rustls::anch…  
+                                             - add_parsable_certificates        
+                                             processed 146 valid and 0 invalid  
+                                             certs                              
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:tokio_tungstenite::tls::encryption::rustls:103:tokio_tungstenite::tls::encryption::rustls - Added 146/146 native root certificates (ignored 0)
+                 DEBUG    livekit            tokio_tungstenite::tls::encrypti…  
+                                             - Added 146/146 native root        
+                                             certificates (ignored 0)           
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:rustls::client::hs:73:rustls::client::hs - No cached session for DnsName("mash-rf7opift.omumbai1a.production.livekit.cloud")
+    17:30:10.442 DEBUG    livekit            rustls::client::hs:73:rustls::cl…  
+                                             - No cached session for            
+                                             DnsName("mash-rf7opift.omumbai1a…  
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:rustls::client::hs:132:rustls::client::hs - Not resuming any session
+                 DEBUG    livekit            rustls::client::hs:132:rustls::c…  
+                                             - Not resuming any session         
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:rustls::client::hs:615:rustls::client::hs - Using ciphersuite TLS13_AES_128_GCM_SHA256
+DEBUG:livekit:rustls::client::tls13:142:rustls::client::tls13 - Not resuming
+DEBUG:livekit:rustls::client::hs:615:rustls::client::hs - Using ciphersuite TLS13_AES_128_GCM_SHA256
+DEBUG:livekit:rustls::client::tls13:381:rustls::client::tls13 - TLS1.3 encrypted extensions: []
+DEBUG:livekit:rustls::client::hs:472:rustls::client::hs - ALPN protocol is None
+    17:30:10.722 DEBUG    livekit            rustls::client::hs:615:rustls::c…  
+                                             - Using ciphersuite                
+                                             TLS13_AES_128_GCM_SHA256           
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:rustls::client::tls13:142:rustls::client::tls13 - Not resuming
+                 DEBUG    livekit            rustls::client::tls13:142:rustls…  
+                                             - Not resuming                     
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:rustls::client::tls13:381:rustls::client::tls13 - TLS1.3 encrypted extensions: []
+    17:30:10.723 DEBUG    livekit            rustls::client::tls13:381:rustls…  
+                                             - TLS1.3 encrypted extensions: []  
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:rustls::client::hs:472:rustls::client::hs - ALPN protocol is None
+                 DEBUG    livekit            rustls::client::hs:472:rustls::c…  
+                                             - ALPN protocol is None            
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit:tungstenite::handshake::client:95:tungstenite::handshake::client - Client handshake done.
+DEBUG:livekit:tungstenite::handshake::client:95:tungstenite::handshake::client - Client handshake done.
+    17:30:11.131 DEBUG    livekit            tungstenite::handshake::client:9…  
+                                             - Client handshake done.           
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+WARNING:livekit.agents:The room connection was not established within 10 seconds after calling job_entry. This might mean that job_ctx.connect() was never invoked, or that no AgentSession with an active RoomIO has been started.
+WARNING:livekit.agents:The room connection was not established within 10 seconds after calling job_entry. This might mean that job_ctx.connect() was never invoked, or that no AgentSession with an active RoomIO has been started.
+    17:30:11.850 WARNING  livekit.agents     The room connection was not        
+                                             established within 10 seconds      
+                                             after calling job_entry. This      
+                                             might mean that job_ctx.connect()  
+                                             was never invoked, or that no      
+                                             AgentSession with an active        
+                                             RoomIO has been started.           
+                                         {"pid": 27269, "job_id": 
+"AJ_jFNpedmJ8WNB", "room_id": "RM_hAwuYosXPLcB"}
+WARNING:watchfiles.main:received signal 15, raising KeyboardInterrupt
+    17:30:13.787 WARNING  watchfiles.main    received signal 15, raising        
+                                             KeyboardInterrupt                  
+WARNING:livekit.agents:exiting forcefully
+    17:30:13.790 WARNING  livekit.agents     exiting forcefully  
+INFO:mash-agent:HUMAN mash-ui-new found! Waking up Mash...
+INFO:mash-agent:HUMAN mash-ui-new found! Waking up Mash...
+ERROR:livekit.agents:unhandled exception while running the job task
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/opentelemetry/util/_decorator.py", line 71, in async_wrapper
+    return await func(*args, **kwargs)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/livekit/agents/ipc/job_proc_lazy_main.py", line 316, in _traceable_entrypoint
+    await self._job_entrypoint_fnc(job_ctx)
+  File "/home/hashir/Documents/mash/backend_agent/agent.py", line 70, in entrypoint
+    model = google.realtime.RealtimeModel(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: RealtimeModel.__init__() got an unexpected keyword argument 'fnc_ctx'
+    17:30:14.468 INFO     mash-agent         HUMAN mash-ui-new found! Waking    
+                                             up Mash...                         
+DEBUG:livekit.agents:shutting down job task
+                                     {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB",
+"room_id": "RM_hAwuYosXPLcB"}
+INFO:livekit.agents:process exiting
+ERROR:livekit.agents:unhandled exception while running the job task
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/opentelemetry/util/_decorator.py", line 71, in async_wrapper
+    return await func(*args, **kwargs)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/livekit/agents/ipc/job_proc_lazy_main.py", line 316, in _traceable_entrypoint
+    await self._job_entrypoint_fnc(job_ctx)
+  File "/home/hashir/Documents/mash/backend_agent/agent.py", line 70, in entrypoint
+    model = google.realtime.RealtimeModel(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: RealtimeModel.__init__() got an unexpected keyword argument 'fnc_ctx'
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/opentelemetry/util/_decorator.py", line 71, in async_wrapper
+    return await func(*args, **kwargs)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/livekit/agents/ipc/job_proc_lazy_main.py", line 316, in _traceable_entrypoint
+    await self._job_entrypoint_fnc(job_ctx)
+  File "/home/hashir/Documents/mash/backend_agent/agent.py", line 70, in entrypoint
+    model = google.realtime.RealtimeModel(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: RealtimeModel.__init__() got an unexpected keyword argument 'fnc_ctx'
+    17:30:14.541 INFO     livekit.agents     process exiting  
+                                         {"reason": "job crashed", "pid": 27269,
+"job_id": "AJ_jFNpedmJ8WNB", "room_id": "RM_hAwuYosXPLcB"}
+    17:30:14.533 ERROR    livekit.agents     unhandled exception while running  
+                                             the job task                       
+                                             Traceback (most recent call        
+                                             last):                             
+                                               File                             
+                                             "/home/hashir/Documents/mash/ven…  
+                                             line 71, in async_wrapper          
+                                                 return await func(*args,       
+                                             **kwargs)  # type: ignore          
+                                                        ^^^^^^^^^^^^^^^^^^^^^…  
+                                               File                             
+                                             "/home/hashir/Documents/mash/ven…  
+                                             line 316, in                       
+                                             _traceable_entrypoint              
+                                                 await                          
+                                             self._job_entrypoint_fnc(job_ctx)  
+                                               File                             
+                                             "/home/hashir/Documents/mash/bac…  
+                                             line 70, in entrypoint             
+                                                 model =                        
+                                             google.realtime.RealtimeModel(     
+                                                         ^^^^^^^^^^^^^^^^^^^^…  
+                                             TypeError:                         
+                                             RealtimeModel.__init__() got an    
+                                             unexpected keyword argument        
+                                             'fnc_ctx'                          
+                                         {"pid": 27269, "job_id": 
+"AJ_jFNpedmJ8WNB", "room_id": "RM_hAwuYosXPLcB"}
+Traceback (most recent call last):
+  File 
+"/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/opentelemetry/uti
+l/_decorator.py", line 71, in async_wrapper
+    return await func(*args, **kwargs)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File 
+"/home/hashir/Documents/mash/venv/lib/python3.12/site-packages/livekit/agents/ip
+c/job_proc_lazy_main.py", line 316, in _traceable_entrypoint
+    await self._job_entrypoint_fnc(job_ctx)
+  File "/home/hashir/Documents/mash/backend_agent/agent.py", line 70, in 
+entrypoint
+    model = google.realtime.RealtimeModel(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: RealtimeModel.__init__() got an unexpected keyword argument 'fnc_ctx'
+DEBUG:livekit.agents:shutting down job task
+    17:30:14.539 DEBUG    livekit.agents     shutting down job task  
+                                         {"reason": "job crashed", 
+"user_initiated": false, "pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", "room_id": 
+"RM_hAwuYosXPLcB"}
+DEBUG:livekit:tungstenite::protocol:666:tungstenite::protocol - Received close frame: Some(CloseFrame { code: Normal, reason: "" })
+DEBUG:livekit:tungstenite::protocol:666:tungstenite::protocol - Received close frame: Some(CloseFrame { code: Normal, reason: "" })
+INFO:livekit:livekit::room:1620:livekit::room - disconnected from room with reason: ClientInitiated
+DEBUG:livekit.agents:http_session(): closing the httpclient ctx
+    17:30:14.728 DEBUG    livekit            tungstenite::protocol:666:tungst…  
+                                             - Received close frame:            
+                                             Some(CloseFrame { code: Normal,    
+                                             reason: "" })                      
+DEBUG:livekit.agents:http_session(): creating a new httpclient ctx
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+INFO:livekit:livekit::room:1620:livekit::room - disconnected from room with reason: ClientInitiated
+    17:30:14.730 INFO     livekit            livekit::room:1620:livekit::room   
+                                             - disconnected from room with      
+                                             reason: ClientInitiated            
+                                  {"pid": 27269, "job_id": "AJ_jFNpedmJ8WNB", 
+"room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit.agents:http_session(): closing the httpclient ctx
+    17:30:14.732 DEBUG    livekit.agents     http_session(): closing the        
+                                             httpclient ctx                     
+                                         {"pid": 27269, "job_id": 
+"AJ_jFNpedmJ8WNB", "room_id": "RM_hAwuYosXPLcB"}
+DEBUG:livekit.agents:http_session(): creating a new httpclient ctx
+                 DEBUG    livekit.agents     http_session(): creating a new     
+                                             httpclient ctx                     
+                                         {"pid": 27269, "job_id": 
+"AJ_jFNpedmJ8WNB", "room_id": "RM_hAwuYosXPLcB"}
+
+(python3:27630): Gtk-WARNING **: 17:31:59.147: Theme parsing error: gtk.css:1959:16: 'border-spacing' is not a valid property name
+
+(python3:27630): Gtk-WARNING **: 17:31:59.148: Theme parsing error: gtk.css:3272:16: '-gtk-icon-size' is not a valid property name
+
+(python3:27630): Gtk-WARNING **: 17:31:59.148: Theme parsing error: gtk.css:3286:16: '-gtk-icon-size' is not a valid property name
+qt.multimedia.symbolsresolver: Couldn't load va-x11 library
+qt.multimedia.symbolsresolver: Couldn't resolve va-x11 symbols
+qt.multimedia.symbolsresolver: Couldn't load va-drm library
+qt.multimedia.symbolsresolver: Couldn't resolve va-drm symbols
+qt.multimedia.symbolsresolver: Couldn't load va library
+qt.multimedia.symbolsresolver: Couldn't resolve va symbols
+qt.multimedia.symbolsresolver: Couldn't load va(in plugin) library
+qt.multimedia.symbolsresolver: Couldn't resolve va(in plugin) symbols
+qt.multimedia.ffmpeg: Using Qt multimedia with FFmpeg version 7.1.3 LGPL version 2.1 or later
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/home/hashir/Documents/mash/videos/distracted.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf61.1.100
+  Duration: 00:00:08.51, start: 0.000000, bitrate: 6037 kb/s
+  Stream #0:0[0x1](eng): Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 6027 kb/s, 29.97 fps, 29.97 tbr, 30k tbn (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Video Media Handler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.3.100 libx264
+  Stream #0:1[0x2](eng): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 2 kb/s (default)
+      Metadata:
+        handler_name    : Mainconcept MP4 Sound Media Handler
+        vendor_id       : [0][0][0][0]
+qt.multimedia.playbackengine.codec: "No HW decoder found"
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+DEBUG:asyncio:Using selector: EpollSelector
+    17:32:01.022 DEBUG    asyncio            Using selector: EpollSelector  
+DEV:livekit.agents:Watching /home/hashir/Documents/mash/backend_agent
+    17:32:01.025 DEV      livekit.agents     Watching                           
+                                             /home/hashir/Documents/mash/back…  
+INFO:livekit:livekit_ffi::server:153:livekit_ffi::server - initializing ffi server v0.12.52
+INFO:livekit:livekit_ffi::cabi:50:livekit_ffi::cabi - initializing ffi server v0.12.52
+DEBUG:asyncio:Using selector: EpollSelector
+    17:32:03.216 DEBUG    asyncio            Using selector: EpollSelector  
+INFO:livekit.agents:starting worker
+    17:32:03.221 INFO     livekit.agents     starting worker  
+                                         {"version": "1.5.4", "rtc-version": 
+"1.1.5"}
+INFO:livekit.agents:plugin registered
+    17:32:03.223 INFO     livekit.agents     plugin registered  
+                                         {"plugin": "livekit.plugins.google", 
+"version": "1.5.4"}
+INFO:livekit.agents:preloading plugins
+    17:32:03.224 INFO     livekit.agents     preloading plugins  
+                                         {"packages": ["livekit.plugins.google",
+"av"]}
+INFO:livekit.agents:HTTP server listening on :37069
+    17:32:03.226 INFO     livekit.agents     HTTP server listening on :37069  
+INFO:livekit.agents:registered worker
+    17:32:04.004 INFO     livekit.agents     registered worker  
+                                         {"agent_name": "", "id": 
+"AW_56wWyfJH3ZyP", "url": "wss://mash-rf7opift.livekit.cloud", "region": "India 
+West", "protocol": 17}
+[2026-04-23T12:32:51Z ERROR livekit_ffi::server::audio_source] [AUDIO_CAPTURE] Failed to send callback async_id=19432: the server is not configured
+WARNING:watchfiles.main:received signal 15, raising KeyboardInterrupt
+    17:32:51.305 WARNING  watchfiles.main    received signal 15, raising        
+                                             KeyboardInterrupt                  
+WARNING:livekit.agents:exiting forcefully
+    17:32:51.309 WARNING  livekit.agents     exiting forcefully  
