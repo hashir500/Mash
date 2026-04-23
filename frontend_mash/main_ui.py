@@ -10,8 +10,10 @@ import subprocess
 from dotenv import load_dotenv
 
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QProgressBar, QFrame
-from PyQt6.QtCore import Qt, pyqtSignal, QObject, QPoint
+from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QProgressBar, QFrame, QWidget
+from PyQt6.QtCore import Qt, pyqtSignal, QObject, QPoint, QUrl
+from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
+from PyQt6.QtMultimediaWidgets import QVideoWidget
 
 from livekit import rtc, api
 
@@ -100,6 +102,7 @@ class AudioPlayer:
 class WorkerSignals(QObject):
     energy_updated = pyqtSignal(int)
     status_updated = pyqtSignal(str)
+    expression_updated = pyqtSignal(str)
     connected = pyqtSignal()
     connection_failed = pyqtSignal(str)
     # Thread-safe bridge: background thread emits this, GUI thread writes to audio sink
@@ -153,6 +156,10 @@ class LiveKitThread(threading.Thread):
                         self.signals.energy_updated.emit(state_data["energy"])
                     if "status" in state_data:
                         self.signals.status_updated.emit(state_data["status"])
+                elif msg.get("type") == "agent_expression":
+                    expr_data = msg.get("data", {})
+                    if "expression" in expr_data:
+                        self.signals.expression_updated.emit(expr_data["expression"])
             except Exception as e:
                 print(f"Error parsing data: {e}")
 
@@ -225,10 +232,11 @@ class MashWindow(QMainWindow):
         super().__init__()
         self.init_ui()
         self.signals = WorkerSignals()
-        self.signals.energy_updated.connect(self.update_energy)
+        self.signals.energy_updated.connect(lambda v: None) # Hidden but signal still exists
         self.signals.status_updated.connect(self.update_status)
+        self.signals.expression_updated.connect(self.update_expression)
         self.signals.connected.connect(lambda: self.update_status("connected"))
-        self.signals.connection_failed.connect(lambda e: self.update_status(f"error: {e}"))
+        self.signals.connection_failed.connect(lambda e: self.update_status("error"))
         
         self.old_pos = QPoint()
 
@@ -246,47 +254,70 @@ class MashWindow(QMainWindow):
         self.lk_thread.start()
 
     def init_ui(self):
-        self.setWindowTitle("Mash Virtual Agent")
-        self.resize(250, 150)
+        self.setWindowTitle("Mash Portal")
+        self.setFixedSize(300, 220)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         self.central_widget = QFrame()
         self.central_widget.setObjectName("CentralFrame")
-        self.central_widget.setStyleSheet('''
-            #CentralFrame {
-                background-color: rgba(20, 20, 40, 180);
-                border-radius: 15px;
-                border: 1px solid rgba(255, 255, 255, 50);
-            }
-        ''')
+        self.set_border_color("#ff3333") # Default Red (Connecting)
         
         layout = QVBoxLayout(self.central_widget)
-        self.title_label = QLabel("Mash")
-        self.title_label.setStyleSheet("color: white; font-weight: bold; font-size: 16px;")
-        layout.addWidget(self.title_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.setContentsMargins(5, 5, 5, 5) # Small padding for border visibility
         
-        self.status_label = QLabel("Connecting...")
-        self.status_label.setStyleSheet("color: #a0a0a0; font-size: 12px;")
-        layout.addWidget(self.status_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        # Video Display (Eyes/Face)
+        self.video_widget = QVideoWidget()
+        self.video_widget.setFixedSize(280, 200)
+        self.video_widget.setStyleSheet("border-radius: 20px; background-color: black;")
+        layout.addWidget(self.video_widget, alignment=Qt.AlignmentFlag.AlignCenter)
         
-        self.energy_bar = QProgressBar()
-        self.energy_bar.setRange(0, 100)
-        self.energy_bar.setValue(100)
-        self.energy_bar.setTextVisible(False)
-        self.energy_bar.setStyleSheet('''
-            QProgressBar { background-color: rgba(0, 0, 0, 100); border-radius: 5px; height: 10px; }
-            QProgressBar::chunk { background-color: #00ffcc; border-radius: 5px; }
-        ''')
-        layout.addWidget(self.energy_bar)
+        self.media_player = QMediaPlayer()
+        self.media_player.setVideoOutput(self.video_widget)
+        # Suppress media player audio (we handle it via aplay)
+        self.audio_output = QAudioOutput()
+        self.audio_output.setMuted(True)
+        self.media_player.setAudioOutput(self.audio_output)
         
+        self.media_player.playbackStateChanged.connect(self.handle_playback_state)
+
         self.setCentralWidget(self.central_widget)
+        
+        # Initial expression
+        self.update_expression("distracted")
+
+    def handle_playback_state(self, state):
+        if state == QMediaPlayer.PlaybackState.StoppedState:
+            self.media_player.play() # Loop
+
+    def set_border_color(self, color_hex):
+        self.central_widget.setStyleSheet(f'''
+            #CentralFrame {{
+                background-color: rgba(10, 10, 20, 200);
+                border-radius: 25px;
+                border: 3px solid {color_hex};
+            }}
+        ''')
+
+    def update_expression(self, name):
+        video_path = f"/home/hashir/Documents/mash/videos/{name}.mp4"
+        if not os.path.exists(video_path):
+            print(f"DEBUG: Video not found: {video_path}, falling back to default")
+            video_path = "/home/hashir/Documents/mash/videos/default.mp4"
+            
+        self.media_player.setSource(QUrl.fromLocalFile(video_path))
+        self.media_player.play()
 
     def update_energy(self, value):
-        self.energy_bar.setValue(value)
+        pass # UI hidden
 
     def update_status(self, text):
-        self.status_label.setText(text.capitalize())
+        if "connected" in text.lower():
+            self.set_border_color("#00ff99") # Glowing Green
+        elif "error" in text.lower():
+            self.set_border_color("#ff3333") # Red
+        else:
+            self.set_border_color("#ff9900") # Orange (Connecting)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:

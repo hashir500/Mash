@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 from google.genai import types as genai_types
 
-from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli, Agent, AgentSession
+from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli, Agent, AgentSession, llm
 from livekit.plugins import google
 from livekit import rtc
 
@@ -17,11 +17,15 @@ logger = logging.getLogger("mash-agent")
 async def stat_decay_loop(ctx: JobContext):
     """Background task to simulate stat decay (e.g. energy) and broadcast it."""
     energy = 100
+    last_expression = "distracted"
     while True:
-        await asyncio.sleep(2)  # Faster tick for testing/demonstration
+        await asyncio.sleep(2)
         energy = max(0, energy - 1)
         if energy == 0:
-            energy = 100 # Reset for testing loop
+            energy = 100
+        
+        # Determine auto-expression based on energy
+        expression = "distracted" if energy > 20 else "sleepy"
         
         state_payload = {
             "type": "agent_state",
@@ -31,13 +35,31 @@ async def stat_decay_loop(ctx: JobContext):
             }
         }
         
-        # Publish to the data channel
+        # Publish state
         if ctx.room and ctx.room.local_participant:
-            # Send as JSON string via data channel
             payload_bytes = json.dumps(state_payload).encode("utf-8")
-            # In python livekit, publish_data requires reliable boolean at least as kwarg in newer versions.
             await ctx.room.local_participant.publish_data(payload_bytes, reliable=True)
+            
+            # Publish expression change if it changed
+            if expression != last_expression:
+                expr_payload = {"type": "agent_expression", "data": {"expression": expression}}
+                await ctx.room.local_participant.publish_data(json.dumps(expr_payload).encode("utf-8"), reliable=True)
+                last_expression = expression
+            
             logger.debug(f"Published state: {state_payload}")
+
+class MashActions(llm.FunctionContext):
+    def __init__(self, participant: rtc.LocalParticipant):
+        super().__init__()
+        self.participant = participant
+
+    @llm.ai_callable(description="Set the visual expression of the agent.")
+    async def set_expression(self, 
+        expression: str = llm.Annotated[str, llm.TypeInfo(description="The name of the video file to play (e.g. smile, love, angry, laugh)")]
+    ):
+        logger.info(f"AI requested expression: {expression}")
+        expr_payload = {"type": "agent_expression", "data": {"expression": expression}}
+        await self.participant.publish_data(json.dumps(expr_payload).encode("utf-8"), reliable=True)
 
 async def entrypoint(ctx: JobContext):
     logger.info(f"Connecting to room {ctx.room.name}")
@@ -58,12 +80,16 @@ async def entrypoint(ctx: JobContext):
         "- If the user speaks in Urdu (اردو), you reply in Urdu.\n"
         "- If the user mixes English and Urdu (code-switches), you also mix naturally.\n"
         "- Never switch the language unless the user does first.\n"
-        "- Keep responses concise and conversational."
+        "- Keep responses concise and conversational.\n"
+        "- Available visual expressions you can use: smile, laugh, love, angry, crying, thinking, music, glitch, rainbow."
     )
+
+    fnc_ctx = MashActions(ctx.room.local_participant)
 
     # Initialize the Multimodal Agent using Gemini Live API
     model = google.realtime.RealtimeModel(
-        model="gemini-3.1-flash-live-preview", # Optimized specifically for Live API
+        model="gemini-3.1-flash-live-preview",
+        fnc_ctx=fnc_ctx,
         instructions=MASH_INSTRUCTIONS,
         voice="Puck",
         temperature=0.8,
@@ -95,6 +121,18 @@ async def entrypoint(ctx: JobContext):
     @session.on("user_input_transcribed")
     def on_user_transcript(ev):
         logger.info(f"User Said: {ev.transcript}")
+
+    @session.on("agent_started_speaking")
+    def on_speaking():
+        # Switch to default talking video
+        expr_payload = {"type": "agent_expression", "data": {"expression": "default"}}
+        asyncio.create_task(ctx.room.local_participant.publish_data(json.dumps(expr_payload).encode("utf-8"), reliable=True))
+
+    @session.on("agent_stopped_speaking")
+    def on_stopped_speaking():
+        # Switch back to distracted (idle) video
+        expr_payload = {"type": "agent_expression", "data": {"expression": "distracted"}}
+        asyncio.create_task(ctx.room.local_participant.publish_data(json.dumps(expr_payload).encode("utf-8"), reliable=True))
 
     @session.on("error")
     def on_error(ev):
