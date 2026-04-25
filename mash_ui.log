@@ -1,63 +1,10 @@
 
---- MASH STARTUP: 22893 ---
+--- MASH RECOVERY START: 28830 ---
 DEBUG: AudioPlayer started via aplay.
-DEBUG: Diagnostic beep sent.
-Microphone activated and publishing as SOURCE_MICROPHONE.
-
---- MASH STARTUP: 23562 ---
-DEBUG: AudioPlayer started via aplay.
-DEBUG: Triple diagnostic beep sent.
-Microphone activated and publishing as SOURCE_MICROPHONE.
-
---- MASH STARTUP: 23913 ---
-DEBUG: AudioPlayer started via aplay.
-DEBUG: Triple diagnostic beep sent.
-Microphone activated and publishing as SOURCE_MICROPHONE.
-
---- MASH STARTUP: 24303 ---
-DEBUG: AudioPlayer started via aplay.
-DEBUG: Triple diagnostic beep sent.
-Microphone activated and publishing as SOURCE_MICROPHONE.
-
---- MASH STARTUP: 24595 ---
-DEBUG: AudioPlayer started via aplay.
-DEBUG: Triple diagnostic beep sent.
-Microphone activated and publishing as SOURCE_MICROPHONE.
-
---- MASH STARTUP: 25013 ---
-DEBUG: AudioPlayer started via aplay.
-DEBUG: Triple diagnostic beep sent.
-Microphone activated and publishing as SOURCE_MICROPHONE.
-
---- MASH STARTUP: 25390 ---
-DEBUG: AudioPlayer started via aplay.
-DEBUG: Triple diagnostic beep sent.
-Microphone activated and publishing as SOURCE_MICROPHONE.
-
---- MASH STARTUP: 25832 ---
-DEBUG: AudioPlayer started via aplay.
-DEBUG: Triple diagnostic beep sent.
+DEBUG: Mash initialized.
 DEBUG: Frontend connected to room: mash-v3
 Microphone activated and publishing as SOURCE_MICROPHONE.
-
---- MASH STARTUP: 26595 ---
-DEBUG: AudioPlayer started via aplay.
-DEBUG: Triple diagnostic beep sent.
-DEBUG: Frontend connected to room: mash-v3
-Microphone activated and publishing as SOURCE_MICROPHONE.
-
---- MASH STARTUP: 27080 ---
-DEBUG: AudioPlayer started via aplay.
-DEBUG: Triple diagnostic beep sent.
-DEBUG: Frontend connected to room: mash-v3
-Microphone activated and publishing as SOURCE_MICROPHONE.
-
---- MASH STARTUP: 27630 ---
-DEBUG: AudioPlayer started via aplay.
-DEBUG: Triple diagnostic beep sent.
-DEBUG: Frontend connected to room: mash-v3
-Microphone activated and publishing as SOURCE_MICROPHONE.
-Subscribed to audio track: TR_AMwsSkLRi5aW6A
+Subscribed to audio track: TR_AMo9kgf2V9D87e
 DEBUG: Listening to agent...
 Exception in thread audio-writer:
 Traceback (most recent call last):
@@ -65,6 +12,163 @@ Traceback (most recent call last):
     self.run()
   File "/usr/lib/python3.12/threading.py", line 1010, in run
     self._target(*self._args, **self._kwargs)
-  File "/home/hashir/Documents/mash/frontend_mash/main_ui.py", line 78, in _writer_loop
+  File "/home/hashir/Documents/mash/frontend_mash/main_ui.py", line 80, in _writer_loop
     self._proc.stdin.write(data)
 ValueError: I/O operation on closed file
+
+--- MASH RECOVERY START: 29238 ---
+DEBUG: AudioPlayer started via aplay.
+DEBUG: Mash initialized.
+DEBUG: Frontend connected to room: mash-v3
+Microphone activated and publishing as SOURCE_MICROPHONE.
+Subscribed to audio track: TR_AM4DHg5Vcz4EzT
+DEBUG: Listening to agent...
+
+--- MASH RECOVERY START: 29858 ---
+DEBUG: AudioPlayer started via aplay.
+DEBUG: Mash initialized.
+DEBUG: Frontend connected to room: mash-v3
+Microphone activated and publishing as SOURCE_MICROPHONE.
+Subscribed to audio track: TR_AMptWCr7xaNB8G
+DEBUG: Listening to agent...
+
+--- MASH RECOVERY START: 30316 ---
+DEBUG: AudioPlayer started via aplay.
+DEBUG: Mash initialized.
+DEBUG: Frontend connected to room: mash-v3
+Microphone activated and publishing as SOURCE_MICROPHONE.
+
+--- MASH STABILITY START: 30793 ---
+DEBUG: AudioPlayer started via aplay.
+DEBUG: Mash initialized.
+DEBUG: Frontend connected to room: mash-v3
+Microphone activated and publishing as SOURCE_MICROPHONE.
+Subscribed to audio track: TR_AMeoE9FZysBZN6
+DEBUG: Listening to agent...
+
+--- MASH STABILITY START: 31560 ---
+DEBUG: AudioPlayer started via aplay.
+DEBUG: Mash initialized.
+DEBUG: Frontend connected to room: mash-v3
+Subscribed to audio track: TR_AMeoE9FZysBZN6
+DEBUG: Listening to agent...
+Microphone activated and publishing as SOURCE_MICROPHONE.
+
+--- MASH STABILITY START: 32262 ---
+DEBUG: AudioPlayer started via aplay.
+DEBUG: Mash initialized.
+livekit_api::signal_client:287:livekit_api::signal_client - signal connection failed on v0 path: Timeout("signal connection timed out")
+DEBUG: Frontend connected to room: mash-v3
+Subscribed to audio track: TR_AMecAb4VHh2NUk
+DEBUG: Listening to agent...
+Microphone activated and publishing as SOURCE_MICROPHONE.
+
+--- MASH STABILITY START: 32802 ---
+DEBUG: AudioPlayer started via aplay.
+DEBUG: Mash initialized.
+DEBUG: Frontend connected to room: mash-v3
+Microphone activated and publishing as SOURCE_MICROPHONE.
+Subscribed to audio track: TR_AMgTGuHCvm69C3
+DEBUG: Listening to agent...
+
+--- MASH STABILITY START: 33135 ---
+DEBUG: AudioPlayer started via aplay.
+DEBUG: Mash initialized.
+DEBUG: Frontend connected to room: mash-v3
+Subscribed to audio track: TR_AMgTGuHCvm69C3
+DEBUG: Listening to agent...
+Microphone activated and publishing as SOURCE_MICROPHONE.
+Subscribed to audio track: TR_AM7b5cBjmQXzgQ
+DEBUG: Listening to agent...
+
+--- MASH STABILITY START: 33729 ---
+DEBUG: AudioPlayer started via aplay.
+DEBUG: Mash initialized.
+DEBUG: Frontend connected to room: mash-v3
+Microphone activated and publishing as SOURCE_MICROPHONE.
+
+--- MASH STABILITY START: 34154 ---
+DEBUG: AudioPlayer started via aplay.
+DEBUG: Mash initialized.
+DEBUG: Frontend connected to room: mash-v3
+Microphone activated and publishing as SOURCE_MICROPHONE.
+
+--- MASH STABILITY START: 34551 ---
+DEBUG: AudioPlayer started via aplay.
+DEBUG: Mash initialized.
+DEBUG: Frontend connected to room: mash-v3
+Microphone activated and publishing as SOURCE_MICROPHONE.
+
+--- MASH STABILITY START: 34973 ---
+DEBUG: AudioPlayer started via aplay.
+DEBUG: Mash initialized.
+DEBUG: Frontend connected to room: mash-v3
+Microphone activated and publishing as SOURCE_MICROPHONE.
+
+--- MASH STABILITY START: 35380 ---
+DEBUG: AudioPlayer started via aplay.
+DEBUG: Mash initialized.
+DEBUG: Frontend connected to room: mash-v3
+Microphone activated and publishing as SOURCE_MICROPHONE.
+Subscribed to audio track: TR_AMHvbsNP5BCjS9
+DEBUG: Listening to agent...
+
+--- MASH STABILITY START: 36129 ---
+DEBUG: AudioPlayer started via aplay.
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/frontend_mash/main_ui.py", line 387, in <module>
+    window = MashWindow()
+             ^^^^^^^^^^^^
+  File "/home/hashir/Documents/mash/frontend_mash/main_ui.py", line 279, in __init__
+    self.wake_timer = QTimer()
+                      ^^^^^^
+NameError: name 'QTimer' is not defined
+
+--- MASH STABILITY START: 36192 ---
+DEBUG: AudioPlayer started via aplay.
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/frontend_mash/main_ui.py", line 387, in <module>
+    window = MashWindow()
+             ^^^^^^^^^^^^
+  File "/home/hashir/Documents/mash/frontend_mash/main_ui.py", line 279, in __init__
+    self.wake_timer = QTimer()
+                      ^^^^^^
+NameError: name 'QTimer' is not defined
+
+--- MASH STABILITY START: 36593 ---
+DEBUG: AudioPlayer started via aplay.
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/frontend_mash/main_ui.py", line 387, in <module>
+    window = MashWindow()
+             ^^^^^^^^^^^^
+  File "/home/hashir/Documents/mash/frontend_mash/main_ui.py", line 279, in __init__
+    self.wake_timer = QTimer()
+                      ^^^^^^
+NameError: name 'QTimer' is not defined
+
+--- MASH STABILITY START: 36645 ---
+DEBUG: AudioPlayer started via aplay.
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/frontend_mash/main_ui.py", line 387, in <module>
+    window = MashWindow()
+             ^^^^^^^^^^^^
+  File "/home/hashir/Documents/mash/frontend_mash/main_ui.py", line 279, in __init__
+    self.wake_timer = QTimer()
+                      ^^^^^^
+NameError: name 'QTimer' is not defined
+
+--- MASH STARTUP: 49125 ---
+DEBUG: AudioPlayer started via aplay.
+DEBUG: Triple diagnostic beep sent.
+DEBUG: Frontend connected to room: mash-v3
+Subscribed to audio track: TR_AM7xjg8dEnZNtm
+DEBUG: Listening to agent...
+Microphone activated and publishing as SOURCE_MICROPHONE.
+
+--- MASH STARTUP: 3885 ---
+DEBUG: AudioPlayer started via aplay.
+DEBUG: Triple diagnostic beep sent.
+DEBUG: Frontend connected to room: mash-v3
+Microphone activated and publishing as SOURCE_MICROPHONE.
+Subscribed to audio track: TR_AM46GroyPEUEkP
+DEBUG: Listening to agent...

@@ -7,13 +7,16 @@ import struct
 import asyncio
 import threading
 import subprocess
+import numpy as np
+import time
 from dotenv import load_dotenv
 
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QProgressBar, QFrame, QWidget
-from PyQt6.QtCore import Qt, pyqtSignal, QObject, QPoint, QUrl
+from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QProgressBar, QFrame, QWidget, QGraphicsView, QGraphicsScene
+from PyQt6.QtCore import Qt, pyqtSignal, QObject, QPoint, QUrl, QRectF, QSizeF
 from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
-from PyQt6.QtMultimediaWidgets import QVideoWidget
+from PyQt6.QtMultimediaWidgets import QGraphicsVideoItem
+from PyQt6.QtGui import QRegion, QPainterPath
 
 from livekit import rtc, api
 
@@ -32,6 +35,7 @@ class AudioPlayer:
     """
 
     def __init__(self, sample_rate: int = 24000, channels: int = 1):
+        self.is_playing = False
         self._q = queue.Queue(maxsize=500)
         self._running = False
         self._proc = None
@@ -62,16 +66,29 @@ class AudioPlayer:
 
     def _writer_loop(self):
         """Write queued audio frames to aplay stdin. Block until data arrives."""
+        last_write_time = 0
         while self._running and self._proc and self._proc.poll() is None:
             try:
-                data = self._q.get(timeout=0.5)  # Unblock every 0.5s to check running
-            except queue.Empty:
-                continue
-            try:
+                data = self._q.get(timeout=0.1)
                 self._proc.stdin.write(data)
-                # No flush() needed — bufsize=0 means stdin is unbuffered
-            except (BrokenPipeError, OSError):
-                break
+                last_write_time = time.time()
+                self.is_playing = True
+            except queue.Empty:
+                if time.time() - last_write_time > 1.2:
+                    self.is_playing = False
+                continue
+            except (BrokenPipeError, OSError, ValueError) as e:
+                print(f"DEBUG: aplay pipe broken ({e}), restarting...")
+                self.is_playing = False
+                try:
+                    if self._proc:
+                        self._proc.kill()
+                except:
+                    pass
+                # Give the OS a tiny moment to release the device
+                time.sleep(0.1)
+                self._start(24000, 1)
+                break # the new _start() call spawns a new thread, so exit this old thread
 
     def write(self, data: bytes):
         """Enqueue audio frame as-is. Non-blocking — drops frame if queue full."""
@@ -118,16 +135,19 @@ class LiveKitThread(threading.Thread):
         api_secret = os.getenv("LIVEKIT_API_SECRET")
         
         if api_key and api_secret:
+            import uuid
+            self._ui_id = f"mash-ui-{uuid.uuid4().hex[:6]}"
             self.token = api.AccessToken(api_key, api_secret) \
-                .with_identity("mash-ui-new") \
+                .with_identity(self._ui_id) \
                 .with_name("Mash UI") \
-                .with_grants(api.VideoGrants(room_join=True, can_publish=True, can_publish_data=True, room="mash-v3")) \
+                .with_grants(api.VideoGrants(room_join=True, can_publish=True, can_publish_data=True, room="mash-vRest-9")) \
                 .to_jwt()
         else:
             self.token = ""
         
         self.active = True
         self.loop = None
+        self.mic_muted = False
 
     def run(self):
         self.loop = asyncio.new_event_loop()
@@ -140,6 +160,10 @@ class LiveKitThread(threading.Thread):
         def on_track_subscribed(track: rtc.RemoteTrack, publication: rtc.RemoteTrackPublication, participant: rtc.RemoteParticipant):
             if track.kind == rtc.TrackKind.KIND_AUDIO:
                 print(f"Subscribed to audio track: {track.sid}")
+                self.signals.status_updated.emit("ready")
+                # Immediately mute mic so he doesn't hear his own diagnostic beep
+                self.mic_muted = True
+                self.audio_player.beep(880, 0.2) # Diagnostic high-pitch beep
                 self._current_track = track
                 if self._stream_task:
                     self._stream_task.cancel()
@@ -159,6 +183,16 @@ class LiveKitThread(threading.Thread):
                     expr_data = msg.get("data", {})
                     if "expression" in expr_data:
                         self.signals.expression_updated.emit(expr_data["expression"])
+                elif msg.get("type") == "mute_mic":
+                    print("DEBUG: MASH VOICE DETECTED -> NUCLEAR MUTE")
+                    if hasattr(self, "_mic_track"):
+                        self._mic_track.mute()
+                    self.mic_muted = True
+                elif msg.get("type") == "unmute_mic":
+                    print("DEBUG: MASH VOICE ENDED -> NUCLEAR UNMUTE")
+                    if hasattr(self, "_mic_track"):
+                        self._mic_track.unmute()
+                    self.mic_muted = False
             except Exception as e:
                 print(f"Error parsing data: {e}")
 
@@ -178,20 +212,18 @@ class LiveKitThread(threading.Thread):
         try:
             await self.room.connect(self.url, self.token)
             print(f"DEBUG: Frontend connected to room: {self.room.name}")
-            # Microphone
+            # Microphone (Native SDK)
             try:
                 self.devices = rtc.MediaDevices()
-                # Keep handle reference to prevent garbage collection
                 self.mic_handle = self.devices.open_input()
                 self._mic_track = rtc.LocalAudioTrack.create_audio_track("microphone", self.mic_handle.source)
                 
-                # CRITICAL: Must set source=SOURCE_MICROPHONE (2) so that LiveKit's
-                # RoomIO on the backend recognizes this as a microphone track.
-                # Default is SOURCE_UNKNOWN (0) which RoomIO ignores entirely.
                 publish_opts = rtc.TrackPublishOptions()
                 publish_opts.source = rtc.TrackSource.SOURCE_MICROPHONE
                 await self.room.local_participant.publish_track(self._mic_track, publish_opts)
-                print("Microphone activated and publishing as SOURCE_MICROPHONE.")
+                print("Microphone activated and publishing natively.")
+                # Start the silence watcher
+                asyncio.create_task(self._monitor_playback())
             except Exception as mic_e:
                 print(f"Mic failed: {mic_e}")
 
@@ -202,20 +234,42 @@ class LiveKitThread(threading.Thread):
 
     async def _stream_to_device(self):
         print("DEBUG: Listening to agent...")
-        # Gemini uses 24kHz Mono Int16
         try:
             stream = rtc.AudioStream.from_track(track=self._current_track, sample_rate=24000)
             async for event in stream:
                 if not self.active: break
                 if event.frame:
-                    # Write directly to aplay stdin from this background thread.
-                    # Bypasses the Qt signal queue entirely — no frame delays, no drops.
+                    # Synchronous OS-level block BEFORE pushing to speakers
+                    if not self.mic_muted:
+                        os.system("amixer sset Capture nocap >/dev/null 2>&1; wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 1 >/dev/null 2>&1")
+                        self.mic_muted = True
+                        
                     self.audio_player.write(bytes(event.frame.data))
+                    # Auto-mute when audio flows
+                    if hasattr(self, "_mic_track") and not self.mic_muted:
+                         self._mic_track.mute()
+                         self.mic_muted = True
+            
+            # Fallback unmute
+            if hasattr(self, "_mic_track"):
+                self._mic_track.unmute()
         except Exception as e:
             print(f"Stream error: {e}")
+            
+    async def _monitor_playback(self):
+        """Watch for silence and unmute mic."""
+        while self.active:
+            await asyncio.sleep(0.1)
+            
+            if not self.audio_player.is_playing:
+                if self.mic_muted:
+                    print("DEBUG: SILENCE DETECTED -> UNMUTING MIC")
+                    os.system("amixer sset Capture cap >/dev/null 2>&1; wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 >/dev/null 2>&1")
+                    self.mic_muted = False
 
     def stop(self):
         self.active = False
+        os.system("amixer sset Capture cap >/dev/null 2>&1; wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 >/dev/null 2>&1")
         
         async def _cleanup():
             if self.room:
@@ -226,6 +280,8 @@ class LiveKitThread(threading.Thread):
 
         if self.loop and self.loop.is_running():
             asyncio.run_coroutine_threadsafe(_cleanup(), self.loop)
+
+from PyQt6.QtGui import QRegion, QPainterPath
 
 class MashWindow(QMainWindow):
     def __init__(self):
@@ -240,58 +296,83 @@ class MashWindow(QMainWindow):
         
         self.old_pos = QPoint()
 
-        # Audio output: use aplay subprocess instead of Qt multimedia.
+        # Start LiveKit
         self.audio_player = AudioPlayer(sample_rate=24000, channels=1)
-        self.audio_player.beep()
-        print("DEBUG: Mash initialized.")
-
-        # Start LiveKit — pass audio_player directly so the async thread
-        # writes audio without going through the Qt signal/event queue.
+        self.audio_player.beep(659, 0.1) # Subtle startup blip
+        
         self.lk_thread = LiveKitThread(self.signals, self.audio_player)
         self.lk_thread.daemon = True
         self.lk_thread.start()
 
     def init_ui(self):
         self.setWindowTitle("Mash Portal")
-        self.setFixedSize(300, 220)
+        self.setFixedSize(350, 270) # Massive safety margin
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         self.central_widget = QFrame()
         self.central_widget.setObjectName("CentralFrame")
         self.set_border_color("#ff3333") 
+        self.central_widget.setFixedSize(300, 220)
+        
+        # Outer container to provide breathing room for the border
+        self.container = QWidget()
+        self.container_layout = QVBoxLayout(self.container)
+        self.container_layout.setContentsMargins(0, 0, 0, 0)
+        self.container_layout.setAlignment(Qt.AlignmentFlag.AlignCenter) # CENTER is key
+        self.container_layout.addWidget(self.central_widget)
         
         layout = QVBoxLayout(self.central_widget)
-        layout.setContentsMargins(5, 5, 5, 5) # Small padding for border visibility
+        layout.setContentsMargins(10, 10, 10, 10) 
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
-        # Video Display (Eyes/Face)
-        self.video_widget = QVideoWidget()
-        self.video_widget.setFixedSize(280, 200)
-        self.video_widget.setStyleSheet("border-radius: 20px; background-color: black;")
-        layout.addWidget(self.video_widget, alignment=Qt.AlignmentFlag.AlignCenter)
+        # Video Display (Graphics-based for rounded corners)
+        self.scene = QGraphicsScene(self)
+        self.video_view = QGraphicsView(self.scene)
+        self.video_view.setFixedSize(280, 200) # Smaller to guarantee border visibility
+        self.video_view.setStyleSheet("background: transparent; border: none;")
+        self.video_view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.video_view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        
+        self.video_item = QGraphicsVideoItem()
+        self.video_item.setSize(QSizeF(280, 200))
+        self.video_item.setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatioByExpanding)
+        self.scene.addItem(self.video_item)
+        
+        layout.addWidget(self.video_view)
         
         self.media_player = QMediaPlayer()
-        self.media_player.setVideoOutput(self.video_widget)
-        # Suppress media player audio entirely to avoid ALSA conflicts
+        self.audio_output = QAudioOutput()
+        self.audio_output.setVolume(0)
+        self.media_player.setAudioOutput(self.audio_output)
+        self.media_player.setLoops(QMediaPlayer.Loops.Infinite) # Seamless looping
+        self.media_player.setVideoOutput(self.video_item)
         
-        self.media_player.playbackStateChanged.connect(self.handle_playback_state)
-
-        self.setCentralWidget(self.central_widget)
+        self.setCentralWidget(self.container)
         
         # Defer initial expression to avoid startup hang
         from PyQt6.QtCore import QTimer
         QTimer.singleShot(1000, lambda: self.update_expression("distracted"))
 
-    def handle_playback_state(self, state):
-        if state == QMediaPlayer.PlaybackState.StoppedState:
-            self.media_player.play() # Loop
+    def apply_mask(self):
+        # Apply mask to the video view ONLY, not the whole window
+        path = QPainterPath()
+        # Radius 25 matches the frame's corner radius
+        path.addRoundedRect(0, 0, self.video_view.width(), self.video_view.height(), 25, 25)
+        region = QRegion(path.toFillPolygon().toPolygon())
+        self.video_view.setMask(region)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        # Re-apply mask to the video view on resize
+        self.apply_mask()
 
     def set_border_color(self, color_hex):
         self.central_widget.setStyleSheet(f'''
             #CentralFrame {{
-                background-color: rgba(10, 10, 20, 200);
+                background-color: rgba(10, 10, 20, 180);
                 border-radius: 25px;
-                border: 3px solid {color_hex};
+                border: 4px solid {color_hex};
             }}
         ''')
 
@@ -310,6 +391,8 @@ class MashWindow(QMainWindow):
     def update_status(self, text):
         if "connected" in text.lower():
             self.set_border_color("#00ff99") # Glowing Green
+        elif "ready" in text.lower():
+            self.set_border_color("#ffff00") # Yellow
         elif "error" in text.lower():
             self.set_border_color("#ff3333") # Red
         else:

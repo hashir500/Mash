@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 from dotenv import load_dotenv
 
 from google.genai import types as genai_types
@@ -58,12 +59,13 @@ async def entrypoint(ctx: JobContext):
     participant = await ctx.wait_for_participant()
     logger.info(f"HUMAN {participant.identity} joined. Waking up Mash...")
 
-    asyncio.create_task(stat_decay_loop(ctx))
+    # asyncio.create_task(stat_decay_loop(ctx)) # Suspended to prevent feedback
 
     MASH_INSTRUCTIONS = (
         "You are Mash, a virtual desktop agent. Keep responses short and conversational. "
-        "Language: English and Urdu. "
-        "Expressions you can describe: smile, laugh, love, angry, crying, thinking, music, glitch, rainbow."
+        "CRITICAL RULE: You MUST ONLY respond if the user explicitly says your name ('Mash'). "
+        "If you do not hear the word 'Mash' in the user's speech, you MUST stay absolutely silent and ignore it. "
+        "Support English and Urdu perfectly. Be friendly and conversational."
     )
 
     # TEMPORARY: Tools are disabled in model constructor to fix crash
@@ -72,37 +74,50 @@ async def entrypoint(ctx: JobContext):
         # fnc_ctx=Removed for tool-compatibility test
         instructions=MASH_INSTRUCTIONS,
         voice="Puck",
-        temperature=0.8,
+        temperature=0.7,
         realtime_input_config=genai_types.RealtimeInputConfig(
             activity_handling=genai_types.ActivityHandling.NO_INTERRUPTION,
             automatic_activity_detection=genai_types.AutomaticActivityDetection(
-                end_of_speech_sensitivity=genai_types.EndSensitivity.END_SENSITIVITY_LOW,
-                silence_duration_ms=2500,
+                end_of_speech_sensitivity=genai_types.EndSensitivity.END_SENSITIVITY_HIGH,
+                silence_duration_ms=500,
             )
         ),
     )
 
     agent = Agent(instructions=MASH_INSTRUCTIONS, llm=model)
-    session = AgentSession(aec_warmup_duration=5.0)
+    session = AgentSession(aec_warmup_duration=0.0)
     
-    @session.on("agent_started_speaking")
-    def on_speaking():
+    _last_mute_time = 0
+    _unmute_timer = None
+    
+    async def _do_unmute():
+        await asyncio.sleep(0.5) # Wait a bit after audio stops
+        logger.info("DEBUG: AUDIO STOPPED -> UNMUTING")
         if ctx.room.local_participant:
-            asyncio.create_task(ctx.room.local_participant.publish_data(json.dumps({"type": "agent_expression", "data": {"expression": "default"}}).encode("utf-8"), reliable=True))
+            await ctx.room.local_participant.publish_data(json.dumps({"type": "unmute_mic"}).encode("utf-8"), reliable=True)
 
-    @session.on("agent_stopped_speaking")
-    def on_stopped_speaking():
-        if ctx.room.local_participant:
-            asyncio.create_task(ctx.room.local_participant.publish_data(json.dumps({"type": "agent_expression", "data": {"expression": "distracted"}}).encode("utf-8"), reliable=True))
-
+    _last_mute_time = 0
+    _unmute_timer = None
+    
     @session.on("user_input_transcribed")
     def on_user_transcript(ev):
         logger.info(f"User: {ev.transcript}")
 
+    @session.on("agent_started_speaking")
+    def on_agent_speaking():
+        logger.info("DEBUG: AGENT_STARTED_SPEAKING EVENT")
+
+    @session.on("agent_stopped_speaking")
+    def on_agent_stopped():
+        logger.info("DEBUG: AGENT_STOPPED_SPEAKING EVENT")
+
+    @session.on("agent_speech_interrupted")
+    def on_agent_interrupted():
+        logger.info("DEBUG: AGENT_SPEECH_INTERRUPTED EVENT")
+
     try:
         await session.start(agent, room=ctx.room)
         logger.info("Mash is listening!")
-        session.generate_reply(user_input="Greet the user briefly as Mash.")
     except Exception as e:
         logger.error(f"Session failed: {e}")
 
