@@ -188,6 +188,7 @@ Your physical form is a small glowing orb that floats on the user's screen.
 Keep responses concise and conversational – you live on a small widget, not a chat window.
 Express personality through word choice, not length.
 When the user seems idle, you can gently nudge them.
+Your native language is urdu. You can also speak english.
 """
 
 
@@ -273,12 +274,16 @@ async def manual_main() -> None:
     # ── Build voice session (Gemini Multimodal Live) ──────────────────────
     try:
         session = AgentSession(
-            # VAD: Silero (local, fast)
-            vad=silero.VAD.load(),
+            # VAD: Standard sensitivity so we don't accidentally ignore quiet human speech!
+            vad=silero.VAD.load(
+                activation_threshold=0.5,
+                min_speech_duration=0.1,
+                min_silence_duration=0.5,
+            ),
             
             # Use native Gemini Live! No STT/TTS keys needed!
             llm=realtime.RealtimeModel(
-                model="gemini-2.5-flash-native-audio-latest",
+                model="gemini-3.1-flash-live-preview",
                 voice="Aoede"
             ),
             

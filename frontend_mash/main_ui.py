@@ -57,6 +57,10 @@ from PyQt6.QtWidgets import (
     QHBoxLayout, QSystemTrayIcon, QMenu, QGraphicsDropShadowEffect,
 )
 
+from PyQt6.QtMultimedia import QMediaPlayer
+from PyQt6.QtMultimediaWidgets import QVideoWidget
+from PyQt6.QtCore import QUrl
+
 # ── LiveKit ───────────────────────────────────────────────────────────────────
 from livekit import rtc, api
 
@@ -311,288 +315,105 @@ class LiveKitWorker(QThread):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Orb Canvas – custom-painted animated orb
+# Video Avatar – plays MP4s mapped to states
 # ─────────────────────────────────────────────────────────────────────────────
-class OrbCanvas(QWidget):
+class VideoAvatar(QWidget):
     """
-    Renders the Mash avatar as an animated glowing orb.
-    All drawing is done via QPainter for smooth, GPU-friendly compositing.
+    Renders the Mash avatar using QtMultimedia, styled like a neon rectangular screen.
     """
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setFixedSize(WIN_SIZE, WIN_SIZE)
+        # Rectangular dimension
+        w, h = 260, 200
+        self.setFixedSize(w, h)
+        
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(6, 6, 6, 6) # space for border
 
-        self._state      = STATE_IDLE
-        self._energy     = 80.0
-        self._mood       = 75.0
-        self._phase      = 0.0          # animation phase (radians)
-        self._speak_amp  = 0.0          # speaking pulse amplitude
-        self._blink_open = 1.0          # eye-open fraction 0→1
-        self._blink_t    = 0.0          # blink timer
+        # Video surface
+        self.video_widget = QVideoWidget()
+        layout.addWidget(self.video_widget)
 
-        # ── animation tick ────────────────────────────────────────────────────
-        self._timer = QTimer(self)
-        self._timer.timeout.connect(self._tick)
-        self._timer.start(16)  # ~60 fps
+        # Style the container for rounded neon green look
+        self.setStyleSheet("""
+            VideoAvatar {
+                background-color: transparent;
+                border: 4px solid #0df524;
+                border-radius: 16px;
+            }
+            QVideoWidget {
+                background-color: black;
+                border-radius: 12px;
+            }
+        """)
 
-        # ── blink timer ───────────────────────────────────────────────────────
-        self._blink_timer = QTimer(self)
-        self._blink_timer.timeout.connect(self._trigger_blink)
-        self._blink_timer.start(3500)
+        # Backend player
+        self.player = QMediaPlayer()
+        self.player.setVideoOutput(self.video_widget)
+        self.player.setLoops(QMediaPlayer.Loops.Infinite)
 
-        self._t0 = time.time()
+        self._state = STATE_IDLE
+        self.video_dir = PROJECT_ROOT / "videos"
+        
+        # State mappings to mp4
+        self.state_map = {
+            STATE_IDLE:      "default.mp4",
+            STATE_LISTENING: "uwu.mp4",
+            STATE_THINKING:  "distracted.mp4",
+            STATE_SPEAKING:  "smile.mp4",
+            STATE_SLEEPING:  "sleepy.mp4",
+        }
 
-    # ── public setters (called via Qt signals) ────────────────────────────────
     def set_state(self, state: str) -> None:
+        if self._state == state and self.player.playbackState() == QMediaPlayer.PlaybackState.PlayingState:
+            return # already playing the correct state
+
         self._state = state
-        self.update()
+        
+        # Dynamically change the border color!
+        border_colors = {
+            STATE_IDLE:      "#0df524",  # Neon Green
+            STATE_LISTENING: "#00bfff",  # Deep Sky Blue
+            STATE_THINKING:  "#a020f0",  # Purple
+            STATE_SPEAKING:  "#ffff00",  # Bright Yellow
+            STATE_SLEEPING:  "#404080",  # Dark Blueish Gray
+        }
+        color = border_colors.get(state, "#0df524")
+        self.setStyleSheet(f"""
+            VideoAvatar {{
+                background-color: transparent;
+                border: 4px solid {color};
+                border-radius: 16px;
+            }}
+            QVideoWidget {{
+                background-color: black;
+                border-radius: 12px;
+            }}
+        """)
+
+        filename = self.state_map.get(state, "default.mp4")
+        vpath = self.video_dir / filename
+        
+        if vpath.exists():
+            self.player.setSource(QUrl.fromLocalFile(str(vpath)))
+            self.player.play()
+        else:
+            logger.warning("Missing video: %s", vpath)
 
     def set_stats(self, energy: float, mood: float) -> None:
-        self._energy = energy
-        self._mood   = mood
-        self.update()
+        # We don't render progress bars on top of the videos per the design
+        pass
 
-    # ── animation ─────────────────────────────────────────────────────────────
-    def _tick(self) -> None:
-        dt = time.time() - self._t0
-        speed = {
-            STATE_IDLE:      0.8,
-            STATE_LISTENING: 1.4,
-            STATE_THINKING:  2.0,
-            STATE_SPEAKING:  2.8,
-            STATE_SLEEPING:  0.3,
-        }.get(self._state, 1.0)
-        self._phase = (dt * speed) % (2 * math.pi)
-
-        # Speaking pulse decay
-        if self._state == STATE_SPEAKING:
-            self._speak_amp = min(1.0, self._speak_amp + 0.08)
-        else:
-            self._speak_amp = max(0.0, self._speak_amp - 0.05)
-
-        # Blink animation
-        if self._blink_t > 0:
-            self._blink_t = max(0.0, self._blink_t - 0.07)
-            self._blink_open = self._blink_t / 1.0
-        else:
-            self._blink_open = 1.0
-
-        self.update()
-
-    def _trigger_blink(self) -> None:
-        if self._state != STATE_SLEEPING:
-            self._blink_t = 1.0
-
-    # ── painting ──────────────────────────────────────────────────────────────
-    def paintEvent(self, _event) -> None:  # noqa: N802
+    def paintEvent(self, _event) -> None:
+        # Need to implement paintEvent just so stylesheets properly apply on QWidget subclasses
+        from PyQt6.QtWidgets import QStyleOption, QStyle
+        from PyQt6.QtGui import QPainter
+        opt = QStyleOption()
+        opt.initFrom(self)
         p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self.style().drawPrimitive(QStyle.PrimitiveElement.PE_Widget, opt, p, self)
 
-        cx = WIN_SIZE / 2
-        cy = WIN_SIZE / 2
-
-        color = PALETTE.get(self._state, PALETTE[STATE_IDLE])
-        glow  = GLOW.get(self._state,   GLOW[STATE_IDLE])
-
-        # ── outer glow ────────────────────────────────────────────────────────
-        glow_r = ORB_RADIUS + 28 + 8 * math.sin(self._phase)
-        grad_glow = QRadialGradient(QPointF(cx, cy), glow_r)
-        grad_glow.setColorAt(0.0, glow)
-        grad_glow.setColorAt(1.0, QColor(0, 0, 0, 0))
-        p.setBrush(QBrush(grad_glow))
-        p.setPen(Qt.PenStyle.NoPen)
-        p.drawEllipse(QPointF(cx, cy), glow_r, glow_r)
-
-        # ── floating offset ───────────────────────────────────────────────────
-        float_y = cy + 6 * math.sin(self._phase)
-
-        # ── orb body (radial gradient – glass look) ───────────────────────────
-        orb_r = ORB_RADIUS + (4 * math.sin(self._phase * 2) if self._state == STATE_SPEAKING else 0)
-        orb_r *= (0.6 + 0.4 * (self._energy / 100))  # shrinks when sleepy
-
-        grad_orb = QRadialGradient(QPointF(cx - orb_r * 0.3, float_y - orb_r * 0.3), orb_r * 1.2)
-        light_color = QColor(
-            min(255, color.red()   + 60),
-            min(255, color.green() + 60),
-            min(255, color.blue()  + 60),
-            230,
-        )
-        grad_orb.setColorAt(0.0, light_color)
-        grad_orb.setColorAt(0.5, color)
-        dark_color = QColor(
-            max(0, color.red()   - 40),
-            max(0, color.green() - 40),
-            max(0, color.blue()  - 40),
-            200,
-        )
-        grad_orb.setColorAt(1.0, dark_color)
-        p.setBrush(QBrush(grad_orb))
-        p.setPen(Qt.PenStyle.NoPen)
-        p.drawEllipse(QPointF(cx, float_y), orb_r, orb_r)
-
-        # ── glass specular highlight ──────────────────────────────────────────
-        spec_r = orb_r * 0.38
-        grad_spec = QRadialGradient(QPointF(cx - orb_r * 0.25, float_y - orb_r * 0.28), spec_r)
-        grad_spec.setColorAt(0.0, QColor(255, 255, 255, 160))
-        grad_spec.setColorAt(1.0, QColor(255, 255, 255, 0))
-        p.setBrush(QBrush(grad_spec))
-        p.drawEllipse(QPointF(cx - orb_r * 0.25, float_y - orb_r * 0.28), spec_r, spec_r)
-
-        # ── rim ring ─────────────────────────────────────────────────────────
-        p.setBrush(Qt.BrushStyle.NoBrush)
-        rim_color = QColor(255, 255, 255, 50)
-        p.setPen(QPen(rim_color, 1.5))
-        p.drawEllipse(QPointF(cx, float_y), orb_r, orb_r)
-
-        # ── face ─────────────────────────────────────────────────────────────
-        self._draw_face(p, cx, float_y, orb_r)
-
-        # ── speaking waveform ring ────────────────────────────────────────────
-        if self._speak_amp > 0.01:
-            self._draw_speak_ring(p, cx, float_y, orb_r)
-
-        # ── stat bars ─────────────────────────────────────────────────────────
-        self._draw_stat_bars(p)
-
-        # ── state label ───────────────────────────────────────────────────────
-        self._draw_label(p)
-
-        p.end()
-
-    def _draw_face(self, p: QPainter, cx: float, cy: float, r: float) -> None:
-        """Draw two eyes and a mouth that change with state."""
-        eye_color = QColor(255, 255, 255, 220)
-        eye_size  = r * 0.16
-        eye_y     = cy - r * 0.15
-
-        # Blink squish
-        blink_sy = self._blink_open
-
-        if self._state == STATE_SLEEPING:
-            # Closed crescent eyes + zzz
-            p.setPen(QPen(eye_color, 2.0))
-            p.setBrush(Qt.BrushStyle.NoBrush)
-            for ex in [cx - r * 0.28, cx + r * 0.28]:
-                p.drawArc(
-                    QRectF(ex - eye_size, eye_y - eye_size * 0.5,
-                           eye_size * 2, eye_size),
-                    0, 180 * 16,
-                )
-            # ZZZ text
-            p.setPen(QPen(QColor(255, 255, 255, 120), 1))
-            f = QFont("Sans Serif", int(r * 0.18))
-            f.setBold(True)
-            p.setFont(f)
-            p.drawText(QRectF(cx + r * 0.1, cy - r * 0.55, r * 0.6, r * 0.3),
-                       Qt.AlignmentFlag.AlignCenter, "z z z")
-        else:
-            # Normal round eyes
-            p.setBrush(QBrush(eye_color))
-            p.setPen(Qt.PenStyle.NoPen)
-            for ex in [cx - r * 0.28, cx + r * 0.28]:
-                ey_h = eye_size * blink_sy
-                ey_off = eye_size * (1 - blink_sy) * 0.5
-                p.drawEllipse(
-                    QRectF(ex - eye_size, eye_y - ey_h * 0.5 + ey_off,
-                           eye_size * 2, max(0.5, ey_h * 2)),
-                )
-
-            # Tiny pupil
-            pupil_color = QColor(20, 20, 40, 200)
-            p.setBrush(QBrush(pupil_color))
-            for ex in [cx - r * 0.28, cx + r * 0.28]:
-                ps = eye_size * 0.55 * blink_sy
-                p.drawEllipse(QPointF(ex, eye_y), ps, ps)
-
-        # ── mouth ─────────────────────────────────────────────────────────────
-        mouth_y  = cy + r * 0.30
-        mouth_w  = r * 0.55
-        mouth_h  = r * 0.20
-
-        p.setPen(QPen(eye_color, 2.2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
-        p.setBrush(Qt.BrushStyle.NoBrush)
-
-        path = QPainterPath()
-        if self._state == STATE_SPEAKING:
-            # Open / wavy mouth
-            path.moveTo(cx - mouth_w * 0.5, mouth_y)
-            cp1x = cx - mouth_w * 0.2
-            cp2x = cx + mouth_w * 0.2
-            amp  = mouth_h * (0.5 + 0.5 * math.sin(self._phase * 3))
-            path.cubicTo(cp1x, mouth_y + amp, cp2x, mouth_y - amp, cx + mouth_w * 0.5, mouth_y)
-        elif self._state == STATE_THINKING:
-            # Flat / pensive
-            path.moveTo(cx - mouth_w * 0.35, mouth_y)
-            path.lineTo(cx + mouth_w * 0.35, mouth_y)
-        elif self._state in (STATE_IDLE, STATE_LISTENING):
-            # Slight smile
-            path.moveTo(cx - mouth_w * 0.4, mouth_y)
-            path.cubicTo(
-                cx - mouth_w * 0.1, mouth_y + mouth_h,
-                cx + mouth_w * 0.1, mouth_y + mouth_h,
-                cx + mouth_w * 0.4, mouth_y,
-            )
-        else:
-            # Sleeping – small squiggle
-            path.moveTo(cx - mouth_w * 0.25, mouth_y)
-            path.cubicTo(
-                cx - mouth_w * 0.05, mouth_y + mouth_h * 0.5,
-                cx + mouth_w * 0.05, mouth_y - mouth_h * 0.5,
-                cx + mouth_w * 0.25, mouth_y,
-            )
-        p.drawPath(path)
-
-    def _draw_speak_ring(self, p: QPainter, cx: float, cy: float, r: float) -> None:
-        """Pulsing ring around the orb when speaking."""
-        n_rings = 3
-        for i in range(n_rings):
-            offset  = i * 12
-            alpha   = int(80 * self._speak_amp * (1 - i / n_rings))
-            wave_r  = r + offset + 6 * math.sin(self._phase + i * 1.2)
-            ring_c  = QColor(255, 200, 80, alpha)
-            p.setPen(QPen(ring_c, 1.5))
-            p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawEllipse(QPointF(cx, cy), wave_r, wave_r)
-
-    def _draw_stat_bars(self, p: QPainter) -> None:
-        """Small energy/mood bar strip at the bottom of the window."""
-        bw    = 90       # bar total width
-        bh    = 5        # bar height
-        x0    = (WIN_SIZE - bw) / 2
-        y_e   = WIN_SIZE - 28
-        y_m   = WIN_SIZE - 18
-        gap   = 3        # gap between rail and fill
-
-        for (y, val, col) in [
-            (y_e, self._energy, QColor(100, 220, 255, 180)),
-            (y_m, self._mood,   QColor(255, 140, 200, 180)),
-        ]:
-            # Rail
-            p.setPen(Qt.PenStyle.NoPen)
-            p.setBrush(QBrush(QColor(255, 255, 255, 30)))
-            p.drawRoundedRect(QRectF(x0, y, bw, bh), bh / 2, bh / 2)
-            # Fill
-            fill_w = max(bh, bw * (val / STAT_MAX))
-            p.setBrush(QBrush(col))
-            p.drawRoundedRect(QRectF(x0, y, fill_w, bh), bh / 2, bh / 2)
-
-    def _draw_label(self, p: QPainter) -> None:
-        """Tiny state label below the stat bars."""
-        labels = {
-            STATE_IDLE:      "idle",
-            STATE_LISTENING: "listening…",
-            STATE_THINKING:  "thinking…",
-            STATE_SPEAKING:  "speaking",
-            STATE_SLEEPING:  "sleeping…",
-        }
-        text = labels.get(self._state, "")
-        p.setPen(QPen(QColor(255, 255, 255, 100)))
-        f = QFont("Sans Serif", 8)
-        p.setFont(f)
-        p.drawText(QRectF(0, WIN_SIZE - 10, WIN_SIZE, 10),
-                   Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom, text)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -672,7 +493,7 @@ class MashWindow(QWidget):
             Qt.WindowType.Tool,
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setFixedSize(WIN_SIZE, WIN_SIZE)
+        self.setFixedSize(260, 200)
         self.setWindowTitle("Mash")
 
         # Icon
@@ -680,10 +501,10 @@ class MashWindow(QWidget):
         if icon_path.exists():
             self.setWindowIcon(QIcon(str(icon_path)))
 
-        # ── orb canvas ────────────────────────────────────────────────────────
+        # ── video canvas ──────────────────────────────────────────────────────
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        self._orb = OrbCanvas(self)
+        self._orb = VideoAvatar(self)
         layout.addWidget(self._orb)
 
         # ── transcript bubble ─────────────────────────────────────────────────
@@ -706,7 +527,7 @@ class MashWindow(QWidget):
 
         # ── position: bottom-right corner ─────────────────────────────────────
         screen = QApplication.primaryScreen().availableGeometry()
-        self.move(screen.right() - WIN_SIZE - 20, screen.bottom() - WIN_SIZE - 20)
+        self.move(screen.right() - 260 - 20, screen.bottom() - 200 - 20)
         self.show()
 
     # ── tray ──────────────────────────────────────────────────────────────────
@@ -728,7 +549,7 @@ class MashWindow(QWidget):
 
     def _reset_position(self) -> None:
         screen = QApplication.primaryScreen().availableGeometry()
-        self.move(screen.right() - WIN_SIZE - 20, screen.bottom() - WIN_SIZE - 20)
+        self.move(screen.right() - 260 - 20, screen.bottom() - 200 - 20)
 
     @pyqtSlot(QSystemTrayIcon.ActivationReason)
     def _tray_activated(self, reason) -> None:
