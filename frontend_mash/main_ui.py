@@ -1,420 +1,828 @@
-import sys
-import os
-import json
-import math
-import queue
-import struct
+"""
+frontend_mash/main_ui.py
+========================
+Mash – Virtual Desktop Pet UI
+
+A frameless, translucent, always-on-top desktop widget that:
+  • Connects to the LiveKit room as a plain participant (camera/mic passthrough).
+  • Listens to the LiveKit data channel for state / stat events from the backend brain.
+  • Renders an animated glassmorphic avatar whose appearance reacts to every state.
+  • Supports click-to-wake, drag-to-move, right-click context menu.
+  • Emits microphone audio into the room so the backend STT can hear the user.
+
+Run standalone:
+    python frontend_mash/main_ui.py
+"""
+
+from __future__ import annotations
+
 import asyncio
+import json
+import logging
+import math
+import os
+import sys
 import threading
-import subprocess
-import numpy as np
 import time
-from dotenv import load_dotenv
+from pathlib import Path
 
+# ── path bootstrap ────────────────────────────────────────────────────────────
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QProgressBar, QFrame, QWidget, QGraphicsView, QGraphicsScene
-from PyQt6.QtCore import Qt, pyqtSignal, QObject, QPoint, QUrl, QRectF, QSizeF
-from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
-from PyQt6.QtMultimediaWidgets import QGraphicsVideoItem
-from PyQt6.QtGui import QRegion, QPainterPath
+from dotenv import load_dotenv  # type: ignore
+load_dotenv(PROJECT_ROOT / ".env")
 
+# ── shared ────────────────────────────────────────────────────────────────────
+from shared.events import (
+    DATA_TOPIC, ROOM_NAME,
+    STATE_IDLE, STATE_LISTENING, STATE_THINKING, STATE_SPEAKING, STATE_SLEEPING,
+    EVT_STATE_CHANGE, EVT_STAT_UPDATE, EVT_TRANSCRIPT, EVT_GREETING, EVT_HEARTBEAT,
+    STAT_MAX,
+)
+
+# ── Qt ────────────────────────────────────────────────────────────────────────
+from PyQt6.QtCore import (
+    Qt, QTimer, QPropertyAnimation, QEasingCurve,
+    pyqtSignal, QObject, QPoint, QRectF, QPointF,
+    QThread, pyqtSlot,
+)
+from PyQt6.QtGui import (
+    QPainter, QColor, QRadialGradient, QLinearGradient,
+    QFont, QPainterPath, QPen, QBrush, QIcon, QPixmap,
+    QFontDatabase,
+)
+from PyQt6.QtWidgets import (
+    QApplication, QWidget, QLabel, QVBoxLayout,
+    QHBoxLayout, QSystemTrayIcon, QMenu, QGraphicsDropShadowEffect,
+)
+
+# ── LiveKit ───────────────────────────────────────────────────────────────────
 from livekit import rtc, api
 
-load_dotenv()
+logger = logging.getLogger("mash.ui")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Colour palette (HSL-curated)
+# ─────────────────────────────────────────────────────────────────────────────
+PALETTE = {
+    STATE_IDLE:      QColor(120, 200, 255, 200),   # cool sky-blue
+    STATE_LISTENING: QColor(100, 255, 180, 220),   # mint-green
+    STATE_THINKING:  QColor(200, 150, 255, 210),   # soft violet
+    STATE_SPEAKING:  QColor(255, 200,  80, 230),   # warm amber
+    STATE_SLEEPING:  QColor( 80, 100, 140, 160),   # muted navy
+}
+
+GLOW = {
+    STATE_IDLE:      QColor(120, 200, 255,  60),
+    STATE_LISTENING: QColor(100, 255, 180,  80),
+    STATE_THINKING:  QColor(200, 150, 255,  70),
+    STATE_SPEAKING:  QColor(255, 200,  80,  90),
+    STATE_SLEEPING:  QColor( 80, 100, 140,  40),
+}
+
+GLASS_BG    = QColor(15, 15, 25, 180)
+GLASS_RING  = QColor(255, 255, 255, 40)
+WHITE_ALPHA = QColor(255, 255, 255, 15)
+
+ORB_RADIUS  = 80          # px – orb circle radius
+WIN_SIZE    = 240         # px – total window size
+TRAY_SIZE   = 22          # px – tray icon size
 
 
-class AudioPlayer:
+# ─────────────────────────────────────────────────────────────────────────────
+# SignalBus – thread-safe bridge between asyncio LiveKit thread and Qt main thread
+# ─────────────────────────────────────────────────────────────────────────────
+class SignalBus(QObject):
+    state_changed  = pyqtSignal(str)          # new state string
+    stats_updated  = pyqtSignal(float, float) # energy, mood
+    transcript_rx  = pyqtSignal(str, str)     # role, text
+    connected      = pyqtSignal()
+    disconnected   = pyqtSignal()
+    error          = pyqtSignal(str)
+
+
+bus = SignalBus()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LiveKit client thread
+# ─────────────────────────────────────────────────────────────────────────────
+class LiveKitWorker(QThread):
     """
-    Robust audio output via aplay subprocess + dedicated writer thread.
-
-    Design:
-    - LiveKit async thread calls write() → enqueues frame (non-blocking, ~1μs).
-    - Dedicated writer thread dequeues frames and writes to aplay stdin.
-    - No silence pump, no chunk splitting — frames are written as-is.
-    - ALSA's internal buffer (--buffer-size) absorbs network jitter.
+    Runs the asyncio event loop in a background QThread.
+    Connects to the LiveKit room, publishes microphone audio,
+    and forwards data-channel messages to the Qt signal bus.
     """
 
-    def __init__(self, sample_rate: int = 24000, channels: int = 1):
-        self.is_playing = False
-        self._q = queue.Queue(maxsize=500)
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self._loop: asyncio.AbstractEventLoop | None = None
+        self._room: rtc.Room | None = None
         self._running = False
-        self._proc = None
-        self._start(sample_rate, channels)
 
-    def _start(self, sample_rate: int, channels: int):
-        cmd = [
-            'aplay',
-            '-t', 'raw',
-            '-f', 'S16_LE',
-            '-r', str(sample_rate),
-            '-c', str(channels),
-            '-',
-        ]
-        try:
-            self._proc = subprocess.Popen(
-                cmd, stdin=subprocess.PIPE,
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                bufsize=0,   # Unbuffered — each write() hits the OS pipe immediately
-            )
-            self._running = True
-            threading.Thread(
-                target=self._writer_loop, daemon=True, name='audio-writer'
-            ).start()
-            print("DEBUG: AudioPlayer started via aplay.")
-        except FileNotFoundError:
-            print("ERROR: aplay not found. Install: sudo apt install alsa-utils")
-
-    def _writer_loop(self):
-        """Write queued audio frames to aplay stdin. Block until data arrives."""
-        last_write_time = 0
-        while self._running and self._proc and self._proc.poll() is None:
-            try:
-                data = self._q.get(timeout=0.1)
-                self._proc.stdin.write(data)
-                last_write_time = time.time()
-                self.is_playing = True
-            except queue.Empty:
-                if time.time() - last_write_time > 1.2:
-                    self.is_playing = False
-                continue
-            except (BrokenPipeError, OSError, ValueError) as e:
-                print(f"DEBUG: aplay pipe broken ({e}), restarting...")
-                self.is_playing = False
-                try:
-                    if self._proc:
-                        self._proc.kill()
-                except:
-                    pass
-                # Give the OS a tiny moment to release the device
-                time.sleep(0.1)
-                self._start(24000, 1)
-                break # the new _start() call spawns a new thread, so exit this old thread
-
-    def write(self, data: bytes):
-        """Enqueue audio frame as-is. Non-blocking — drops frame if queue full."""
-        try:
-            self._q.put_nowait(data)
-        except queue.Full:
-            pass
-
-    def beep(self, freq: float = 440, duration: float = 0.3, amplitude: int = 8000):
-        n = int(24000 * duration)
-        samples = [int(amplitude * math.sin(2 * math.pi * freq * i / 24000)) for i in range(n)]
-        self.write(struct.pack(f'<{n}h', *samples))
-
-    def close(self):
+    # ── public API (called from Qt thread) ────────────────────────────────────
+    def stop(self) -> None:
         self._running = False
-        if self._proc:
-            try:
-                self._proc.stdin.close()
-            except Exception:
-                pass
-            try:
-                self._proc.terminate()
-                self._proc.wait(timeout=2)
-            except Exception:
-                pass
+        if self._loop and self._loop.is_running():
+            self._loop.call_soon_threadsafe(self._loop.stop)
 
-class WorkerSignals(QObject):
-    energy_updated = pyqtSignal(int)
-    status_updated = pyqtSignal(str)
-    expression_updated = pyqtSignal(str)
-    connected = pyqtSignal()
-    connection_failed = pyqtSignal(str)
-    # Thread-safe bridge: background thread emits this, GUI thread writes to audio sink
-    audio_frame = pyqtSignal(bytes)
-
-class LiveKitThread(threading.Thread):
-    def __init__(self, signals: WorkerSignals, audio_player):
-        super().__init__()
-        self.signals = signals
-        self.audio_player = audio_player  # Write directly — no Qt signal queue
-        self.room = None
-        self.url = os.getenv("LIVEKIT_URL")
-        api_key = os.getenv("LIVEKIT_API_KEY")
-        api_secret = os.getenv("LIVEKIT_API_SECRET")
-        
-        if api_key and api_secret:
-            import uuid
-            self._ui_id = f"mash-ui-{uuid.uuid4().hex[:6]}"
-            self.token = api.AccessToken(api_key, api_secret) \
-                .with_identity(self._ui_id) \
-                .with_name("Mash UI") \
-                .with_grants(api.VideoGrants(room_join=True, can_publish=True, can_publish_data=True, room="mash-vRest-9")) \
-                .to_jwt()
-        else:
-            self.token = ""
-        
-        self.active = True
-        self.loop = None
-        self.mic_muted = False
-
-    def run(self):
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
-        self.room = rtc.Room(loop=self.loop)
-        self._current_track = None
-        self._stream_task = None
-        
-        @self.room.on("track_subscribed")
-        def on_track_subscribed(track: rtc.RemoteTrack, publication: rtc.RemoteTrackPublication, participant: rtc.RemoteParticipant):
-            if track.kind == rtc.TrackKind.KIND_AUDIO:
-                print(f"Subscribed to audio track: {track.sid}")
-                self.signals.status_updated.emit("ready")
-                # Immediately mute mic so he doesn't hear his own diagnostic beep
-                self.mic_muted = True
-                self.audio_player.beep(880, 0.2) # Diagnostic high-pitch beep
-                self._current_track = track
-                if self._stream_task:
-                    self._stream_task.cancel()
-                self._stream_task = asyncio.run_coroutine_threadsafe(self._stream_to_device(), self.loop)
-
-        @self.room.on("data_received")
-        def on_data_received(data_pkt: rtc.DataPacket):
-            try:
-                msg = json.loads(data_pkt.data.decode("utf-8"))
-                if msg.get("type") == "agent_state":
-                    state_data = msg.get("data", {})
-                    if "energy" in state_data:
-                        self.signals.energy_updated.emit(state_data["energy"])
-                    if "status" in state_data:
-                        self.signals.status_updated.emit(state_data["status"])
-                elif msg.get("type") == "agent_expression":
-                    expr_data = msg.get("data", {})
-                    if "expression" in expr_data:
-                        self.signals.expression_updated.emit(expr_data["expression"])
-                elif msg.get("type") == "mute_mic":
-                    print("DEBUG: MASH VOICE DETECTED -> NUCLEAR MUTE")
-                    if hasattr(self, "_mic_track"):
-                        self._mic_track.mute()
-                    self.mic_muted = True
-                elif msg.get("type") == "unmute_mic":
-                    print("DEBUG: MASH VOICE ENDED -> NUCLEAR UNMUTE")
-                    if hasattr(self, "_mic_track"):
-                        self._mic_track.unmute()
-                    self.mic_muted = False
-            except Exception as e:
-                print(f"Error parsing data: {e}")
-
+    # ── QThread.run – executed in background thread ───────────────────────────
+    def run(self) -> None:
+        self._loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self._loop)
+        self._running = True
         try:
-            self.loop.run_until_complete(self._connect())
-            self.loop.run_forever()
-        except Exception as e:
-            print(f"Loop error: {e}")
+            self._loop.run_until_complete(self._connect())
+        except Exception as exc:
+            logger.error("LiveKit worker error: %s", exc, exc_info=True)
+            bus.error.emit(str(exc))
         finally:
-            self.loop.close()
+            self._loop.close()
 
-    async def _connect(self):
-        if not self.url or not self.token:
-            self.signals.connection_failed.emit("Missing Credentials.")
-            return
+    # ── async coroutine ───────────────────────────────────────────────────────
+    async def _connect(self) -> None:
+        url     = os.environ["LIVEKIT_URL"]
+        api_key = os.environ["LIVEKIT_API_KEY"]
+        secret  = os.environ["LIVEKIT_API_SECRET"]
 
-        try:
-            await self.room.connect(self.url, self.token)
-            print(f"DEBUG: Frontend connected to room: {self.room.name}")
-            # Microphone (Native SDK)
+        # Generate a participant token for the UI client
+        token = (
+            api.AccessToken(api_key, secret)
+            .with_identity("mash-ui")
+            .with_name("Mash Desktop UI")
+            .with_grants(
+                api.VideoGrants(
+                    room_join=True,
+                    room=ROOM_NAME,
+                    can_publish=True,
+                    can_subscribe=True,
+                )
+            )
+            .to_jwt()
+        )
+
+        room = rtc.Room()
+        self._room = room
+
+        # ── data channel handler ──────────────────────────────────────────────
+        @room.on("data_received")
+        def _on_data(dp: rtc.DataPacket) -> None:
             try:
-                self.devices = rtc.MediaDevices()
-                self.mic_handle = self.devices.open_input()
-                self._mic_track = rtc.LocalAudioTrack.create_audio_track("microphone", self.mic_handle.source)
-                
-                publish_opts = rtc.TrackPublishOptions()
-                publish_opts.source = rtc.TrackSource.SOURCE_MICROPHONE
-                await self.room.local_participant.publish_track(self._mic_track, publish_opts)
-                print("Microphone activated and publishing natively.")
-                # Start the silence watcher
-                asyncio.create_task(self._monitor_playback())
-            except Exception as mic_e:
-                print(f"Mic failed: {mic_e}")
+                msg = json.loads(dp.data.decode())
+                evt_type = msg.get("type")
+                payload  = msg.get("payload", {})
 
-                
-            self.signals.connected.emit()
-        except Exception as e:
-            self.signals.connection_failed.emit(str(e))
+                if evt_type == EVT_STATE_CHANGE:
+                    bus.state_changed.emit(payload.get("state", STATE_IDLE))
 
-    async def _stream_to_device(self):
-        print("DEBUG: Listening to agent...")
+                elif evt_type == EVT_STAT_UPDATE:
+                    bus.stats_updated.emit(
+                        float(payload.get("energy", 80)),
+                        float(payload.get("mood",   75)),
+                    )
+
+                elif evt_type == EVT_TRANSCRIPT:
+                    bus.transcript_rx.emit(
+                        payload.get("role", "agent"),
+                        payload.get("text", ""),
+                    )
+
+                elif evt_type == EVT_GREETING:
+                    bus.connected.emit()
+
+                # EVT_HEARTBEAT silently ignored
+
+            except Exception as exc:
+                logger.warning("data_received parse error: %s", exc)
+
+        @room.on("connected")
+        def _on_connected() -> None:
+            logger.info("LiveKit room connected")
+            bus.connected.emit()
+
+        @room.on("disconnected")
+        def _on_disconnected(*_) -> None:
+            logger.info("LiveKit room disconnected")
+            bus.disconnected.emit()
+
+        @room.on("track_subscribed")
+        def _on_track_subscribed(track: rtc.Track, publication: rtc.RemoteTrackPublication, participant: rtc.RemoteParticipant):
+            if track.kind == rtc.TrackKind.KIND_AUDIO:
+                logger.info("Subscribed to agent audio track!")
+                asyncio.create_task(self._play_audio_track(track))
+
+        # ── connect ───────────────────────────────────────────────────────────
+        logger.info("Connecting to LiveKit room '%s'…", ROOM_NAME)
+        await room.connect(url, token)
+
+        # ── publish microphone audio ──────────────────────────────────────────
         try:
-            stream = rtc.AudioStream.from_track(track=self._current_track, sample_rate=24000)
-            async for event in stream:
-                if not self.active: break
-                if event.frame:
-                    # Synchronous OS-level block BEFORE pushing to speakers
-                    if not self.mic_muted:
-                        os.system("amixer sset Capture nocap >/dev/null 2>&1; wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 1 >/dev/null 2>&1")
-                        self.mic_muted = True
-                        
-                    self.audio_player.write(bytes(event.frame.data))
-                    # Auto-mute when audio flows
-                    if hasattr(self, "_mic_track") and not self.mic_muted:
-                         self._mic_track.mute()
-                         self.mic_muted = True
+            source  = rtc.AudioSource(sample_rate=16000, num_channels=1)
+            mic_trk = rtc.LocalAudioTrack.create_audio_track("mash-mic", source)
+            opts    = rtc.TrackPublishOptions(source=rtc.TrackSource.SOURCE_MICROPHONE)
+            await room.local_participant.publish_track(mic_trk, opts)
+
+            # Stream system microphone via sounddevice → LiveKit
+            await self._stream_mic(source)
+        except Exception as exc:
+            logger.error("Mic publish error: %s", exc)
+
+        # ── keep alive until stopped ──────────────────────────────────────────
+        while self._running:
+            await asyncio.sleep(0.5)
+
+        await room.disconnect()
+
+    async def _play_audio_track(self, track: rtc.AudioTrack) -> None:
+        """Pulls audio frames from the LiveKit remote track and plays them via sounddevice."""
+        import copy
+        audio_stream = rtc.AudioStream(track)
+
+        def _play_thread():
+            import sounddevice as sd
+            import numpy as np
+
+            # Block until we get the first frame to find the sample rate
+            try:
+                first_event_fut = asyncio.run_coroutine_threadsafe(audio_stream.__anext__(), self._loop)
+                first_event = first_event_fut.result(timeout=10)
+            except Exception as exc:
+                logger.error("Failed to get first audio frame: %s", exc)
+                return
+
+            frame = first_event.frame
             
-            # Fallback unmute
-            if hasattr(self, "_mic_track"):
-                self._mic_track.unmute()
-        except Exception as e:
-            print(f"Stream error: {e}")
-            
-    async def _monitor_playback(self):
-        """Watch for silence and unmute mic."""
-        while self.active:
-            await asyncio.sleep(0.1)
-            
-            if not self.audio_player.is_playing:
-                if self.mic_muted:
-                    print("DEBUG: SILENCE DETECTED -> UNMUTING MIC")
-                    os.system("amixer sset Capture cap >/dev/null 2>&1; wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 >/dev/null 2>&1")
-                    self.mic_muted = False
+            try:
+                with sd.OutputStream(samplerate=frame.sample_rate, channels=frame.num_channels, dtype='int16') as stream:
+                    stream.write(np.frombuffer(frame.data, dtype=np.int16))
+                    while self._running:
+                        try:
+                            fut = asyncio.run_coroutine_threadsafe(audio_stream.__anext__(), self._loop)
+                            # Wait for next frame (blocks thread but NOT asyncio loop!)
+                            event = fut.result()
+                            stream.write(np.frombuffer(event.frame.data, dtype=np.int16))
+                        except StopAsyncIteration:
+                            break
+                        except Exception as inner_exc:
+                            logger.error("Audio stream iteration error: %s", inner_exc)
+                            break
+            except Exception as exc:
+                logger.error("OutputStream failed: %s", exc)
 
-    def stop(self):
-        self.active = False
-        os.system("amixer sset Capture cap >/dev/null 2>&1; wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 >/dev/null 2>&1")
-        
-        async def _cleanup():
-            if self.room:
-                await self.room.disconnect()
-            if hasattr(self, 'mic_handle'):
-                await self.mic_handle.close()
-            self.loop.stop()
+        threading.Thread(target=_play_thread, daemon=True).start()
 
-        if self.loop and self.loop.is_running():
-            asyncio.run_coroutine_threadsafe(_cleanup(), self.loop)
+    async def _stream_mic(self, source: rtc.AudioSource) -> None:
+        """Push system mic samples into the LiveKit audio source."""
+        import sounddevice as sd  # type: ignore
+        import numpy as np
 
-from PyQt6.QtGui import QRegion, QPainterPath
+        SAMPLE_RATE  = 16000
+        FRAME_MS     = 10           # 10 ms frames
+        SAMPLES      = SAMPLE_RATE * FRAME_MS // 1000
 
-class MashWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.init_ui()
-        self.signals = WorkerSignals()
-        self.signals.energy_updated.connect(lambda v: None) # Hidden but signal still exists
-        self.signals.status_updated.connect(self.update_status)
-        self.signals.expression_updated.connect(self.update_expression)
-        self.signals.connected.connect(lambda: self.update_status("connected"))
-        self.signals.connection_failed.connect(lambda e: self.update_status("error"))
-        
-        self.old_pos = QPoint()
+        loop = asyncio.get_event_loop()
 
-        # Start LiveKit
-        self.audio_player = AudioPlayer(sample_rate=24000, channels=1)
-        self.audio_player.beep(659, 0.1) # Subtle startup blip
-        
-        self.lk_thread = LiveKitThread(self.signals, self.audio_player)
-        self.lk_thread.daemon = True
-        self.lk_thread.start()
+        def callback(indata, frames, time_info, status):
+            if status:
+                logger.debug("mic status: %s", status)
+            pcm = (indata[:, 0] * 32767).astype(np.int16)
+            frame = rtc.AudioFrame(
+                data=pcm.tobytes(),
+                sample_rate=SAMPLE_RATE,
+                num_channels=1,
+                samples_per_channel=len(pcm),
+            )
+            asyncio.run_coroutine_threadsafe(source.capture_frame(frame), loop)
 
-    def init_ui(self):
-        self.setWindowTitle("Mash Portal")
-        self.setFixedSize(350, 270) # Massive safety margin
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
+        with sd.InputStream(
+            samplerate=SAMPLE_RATE,
+            channels=1,
+            dtype="float32",
+            blocksize=SAMPLES,
+            callback=callback,
+        ):
+            while self._running:
+                await asyncio.sleep(0.1)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Orb Canvas – custom-painted animated orb
+# ─────────────────────────────────────────────────────────────────────────────
+class OrbCanvas(QWidget):
+    """
+    Renders the Mash avatar as an animated glowing orb.
+    All drawing is done via QPainter for smooth, GPU-friendly compositing.
+    """
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setFixedSize(WIN_SIZE, WIN_SIZE)
 
-        self.central_widget = QFrame()
-        self.central_widget.setObjectName("CentralFrame")
-        self.set_border_color("#ff3333") 
-        self.central_widget.setFixedSize(300, 220)
-        
-        # Outer container to provide breathing room for the border
-        self.container = QWidget()
-        self.container_layout = QVBoxLayout(self.container)
-        self.container_layout.setContentsMargins(0, 0, 0, 0)
-        self.container_layout.setAlignment(Qt.AlignmentFlag.AlignCenter) # CENTER is key
-        self.container_layout.addWidget(self.central_widget)
-        
-        layout = QVBoxLayout(self.central_widget)
-        layout.setContentsMargins(10, 10, 10, 10) 
-        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
-        # Video Display (Graphics-based for rounded corners)
-        self.scene = QGraphicsScene(self)
-        self.video_view = QGraphicsView(self.scene)
-        self.video_view.setFixedSize(280, 200) # Smaller to guarantee border visibility
-        self.video_view.setStyleSheet("background: transparent; border: none;")
-        self.video_view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.video_view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        
-        self.video_item = QGraphicsVideoItem()
-        self.video_item.setSize(QSizeF(280, 200))
-        self.video_item.setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatioByExpanding)
-        self.scene.addItem(self.video_item)
-        
-        layout.addWidget(self.video_view)
-        
-        self.media_player = QMediaPlayer()
-        self.audio_output = QAudioOutput()
-        self.audio_output.setVolume(0)
-        self.media_player.setAudioOutput(self.audio_output)
-        self.media_player.setLoops(QMediaPlayer.Loops.Infinite) # Seamless looping
-        self.media_player.setVideoOutput(self.video_item)
-        
-        self.setCentralWidget(self.container)
-        
-        # Defer initial expression to avoid startup hang
-        from PyQt6.QtCore import QTimer
-        QTimer.singleShot(1000, lambda: self.update_expression("distracted"))
+        self._state      = STATE_IDLE
+        self._energy     = 80.0
+        self._mood       = 75.0
+        self._phase      = 0.0          # animation phase (radians)
+        self._speak_amp  = 0.0          # speaking pulse amplitude
+        self._blink_open = 1.0          # eye-open fraction 0→1
+        self._blink_t    = 0.0          # blink timer
 
-    def apply_mask(self):
-        # Apply mask to the video view ONLY, not the whole window
-        path = QPainterPath()
-        # Radius 25 matches the frame's corner radius
-        path.addRoundedRect(0, 0, self.video_view.width(), self.video_view.height(), 25, 25)
-        region = QRegion(path.toFillPolygon().toPolygon())
-        self.video_view.setMask(region)
+        # ── animation tick ────────────────────────────────────────────────────
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._tick)
+        self._timer.start(16)  # ~60 fps
 
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        # Re-apply mask to the video view on resize
-        self.apply_mask()
+        # ── blink timer ───────────────────────────────────────────────────────
+        self._blink_timer = QTimer(self)
+        self._blink_timer.timeout.connect(self._trigger_blink)
+        self._blink_timer.start(3500)
 
-    def set_border_color(self, color_hex):
-        self.central_widget.setStyleSheet(f'''
-            #CentralFrame {{
-                background-color: rgba(10, 10, 20, 180);
-                border-radius: 25px;
-                border: 4px solid {color_hex};
-            }}
-        ''')
+        self._t0 = time.time()
 
-    def update_expression(self, name):
-        video_path = f"/home/hashir/Documents/mash/videos/{name}.mp4"
-        if not os.path.exists(video_path):
-            print(f"DEBUG: Video not found: {video_path}, falling back to default")
-            video_path = "/home/hashir/Documents/mash/videos/default.mp4"
-            
-        self.media_player.setSource(QUrl.fromLocalFile(video_path))
-        self.media_player.play()
+    # ── public setters (called via Qt signals) ────────────────────────────────
+    def set_state(self, state: str) -> None:
+        self._state = state
+        self.update()
 
-    def update_energy(self, value):
-        pass # UI hidden
+    def set_stats(self, energy: float, mood: float) -> None:
+        self._energy = energy
+        self._mood   = mood
+        self.update()
 
-    def update_status(self, text):
-        if "connected" in text.lower():
-            self.set_border_color("#00ff99") # Glowing Green
-        elif "ready" in text.lower():
-            self.set_border_color("#ffff00") # Yellow
-        elif "error" in text.lower():
-            self.set_border_color("#ff3333") # Red
+    # ── animation ─────────────────────────────────────────────────────────────
+    def _tick(self) -> None:
+        dt = time.time() - self._t0
+        speed = {
+            STATE_IDLE:      0.8,
+            STATE_LISTENING: 1.4,
+            STATE_THINKING:  2.0,
+            STATE_SPEAKING:  2.8,
+            STATE_SLEEPING:  0.3,
+        }.get(self._state, 1.0)
+        self._phase = (dt * speed) % (2 * math.pi)
+
+        # Speaking pulse decay
+        if self._state == STATE_SPEAKING:
+            self._speak_amp = min(1.0, self._speak_amp + 0.08)
         else:
-            self.set_border_color("#ff9900") # Orange (Connecting)
+            self._speak_amp = max(0.0, self._speak_amp - 0.05)
 
-    def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.old_pos = event.globalPosition().toPoint()
+        # Blink animation
+        if self._blink_t > 0:
+            self._blink_t = max(0.0, self._blink_t - 0.07)
+            self._blink_open = self._blink_t / 1.0
+        else:
+            self._blink_open = 1.0
 
-    def mouseMoveEvent(self, event):
-        if event.buttons() == Qt.MouseButton.LeftButton:
-            delta = event.globalPosition().toPoint() - self.old_pos
-            self.move(self.pos() + delta)
-            self.old_pos = event.globalPosition().toPoint()
+        self.update()
 
-    def closeEvent(self, event):
-        self.audio_player.close()
-        self.lk_thread.stop()
-        super().closeEvent(event)
+    def _trigger_blink(self) -> None:
+        if self._state != STATE_SLEEPING:
+            self._blink_t = 1.0
+
+    # ── painting ──────────────────────────────────────────────────────────────
+    def paintEvent(self, _event) -> None:  # noqa: N802
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        cx = WIN_SIZE / 2
+        cy = WIN_SIZE / 2
+
+        color = PALETTE.get(self._state, PALETTE[STATE_IDLE])
+        glow  = GLOW.get(self._state,   GLOW[STATE_IDLE])
+
+        # ── outer glow ────────────────────────────────────────────────────────
+        glow_r = ORB_RADIUS + 28 + 8 * math.sin(self._phase)
+        grad_glow = QRadialGradient(QPointF(cx, cy), glow_r)
+        grad_glow.setColorAt(0.0, glow)
+        grad_glow.setColorAt(1.0, QColor(0, 0, 0, 0))
+        p.setBrush(QBrush(grad_glow))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawEllipse(QPointF(cx, cy), glow_r, glow_r)
+
+        # ── floating offset ───────────────────────────────────────────────────
+        float_y = cy + 6 * math.sin(self._phase)
+
+        # ── orb body (radial gradient – glass look) ───────────────────────────
+        orb_r = ORB_RADIUS + (4 * math.sin(self._phase * 2) if self._state == STATE_SPEAKING else 0)
+        orb_r *= (0.6 + 0.4 * (self._energy / 100))  # shrinks when sleepy
+
+        grad_orb = QRadialGradient(QPointF(cx - orb_r * 0.3, float_y - orb_r * 0.3), orb_r * 1.2)
+        light_color = QColor(
+            min(255, color.red()   + 60),
+            min(255, color.green() + 60),
+            min(255, color.blue()  + 60),
+            230,
+        )
+        grad_orb.setColorAt(0.0, light_color)
+        grad_orb.setColorAt(0.5, color)
+        dark_color = QColor(
+            max(0, color.red()   - 40),
+            max(0, color.green() - 40),
+            max(0, color.blue()  - 40),
+            200,
+        )
+        grad_orb.setColorAt(1.0, dark_color)
+        p.setBrush(QBrush(grad_orb))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawEllipse(QPointF(cx, float_y), orb_r, orb_r)
+
+        # ── glass specular highlight ──────────────────────────────────────────
+        spec_r = orb_r * 0.38
+        grad_spec = QRadialGradient(QPointF(cx - orb_r * 0.25, float_y - orb_r * 0.28), spec_r)
+        grad_spec.setColorAt(0.0, QColor(255, 255, 255, 160))
+        grad_spec.setColorAt(1.0, QColor(255, 255, 255, 0))
+        p.setBrush(QBrush(grad_spec))
+        p.drawEllipse(QPointF(cx - orb_r * 0.25, float_y - orb_r * 0.28), spec_r, spec_r)
+
+        # ── rim ring ─────────────────────────────────────────────────────────
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        rim_color = QColor(255, 255, 255, 50)
+        p.setPen(QPen(rim_color, 1.5))
+        p.drawEllipse(QPointF(cx, float_y), orb_r, orb_r)
+
+        # ── face ─────────────────────────────────────────────────────────────
+        self._draw_face(p, cx, float_y, orb_r)
+
+        # ── speaking waveform ring ────────────────────────────────────────────
+        if self._speak_amp > 0.01:
+            self._draw_speak_ring(p, cx, float_y, orb_r)
+
+        # ── stat bars ─────────────────────────────────────────────────────────
+        self._draw_stat_bars(p)
+
+        # ── state label ───────────────────────────────────────────────────────
+        self._draw_label(p)
+
+        p.end()
+
+    def _draw_face(self, p: QPainter, cx: float, cy: float, r: float) -> None:
+        """Draw two eyes and a mouth that change with state."""
+        eye_color = QColor(255, 255, 255, 220)
+        eye_size  = r * 0.16
+        eye_y     = cy - r * 0.15
+
+        # Blink squish
+        blink_sy = self._blink_open
+
+        if self._state == STATE_SLEEPING:
+            # Closed crescent eyes + zzz
+            p.setPen(QPen(eye_color, 2.0))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            for ex in [cx - r * 0.28, cx + r * 0.28]:
+                p.drawArc(
+                    QRectF(ex - eye_size, eye_y - eye_size * 0.5,
+                           eye_size * 2, eye_size),
+                    0, 180 * 16,
+                )
+            # ZZZ text
+            p.setPen(QPen(QColor(255, 255, 255, 120), 1))
+            f = QFont("Sans Serif", int(r * 0.18))
+            f.setBold(True)
+            p.setFont(f)
+            p.drawText(QRectF(cx + r * 0.1, cy - r * 0.55, r * 0.6, r * 0.3),
+                       Qt.AlignmentFlag.AlignCenter, "z z z")
+        else:
+            # Normal round eyes
+            p.setBrush(QBrush(eye_color))
+            p.setPen(Qt.PenStyle.NoPen)
+            for ex in [cx - r * 0.28, cx + r * 0.28]:
+                ey_h = eye_size * blink_sy
+                ey_off = eye_size * (1 - blink_sy) * 0.5
+                p.drawEllipse(
+                    QRectF(ex - eye_size, eye_y - ey_h * 0.5 + ey_off,
+                           eye_size * 2, max(0.5, ey_h * 2)),
+                )
+
+            # Tiny pupil
+            pupil_color = QColor(20, 20, 40, 200)
+            p.setBrush(QBrush(pupil_color))
+            for ex in [cx - r * 0.28, cx + r * 0.28]:
+                ps = eye_size * 0.55 * blink_sy
+                p.drawEllipse(QPointF(ex, eye_y), ps, ps)
+
+        # ── mouth ─────────────────────────────────────────────────────────────
+        mouth_y  = cy + r * 0.30
+        mouth_w  = r * 0.55
+        mouth_h  = r * 0.20
+
+        p.setPen(QPen(eye_color, 2.2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+
+        path = QPainterPath()
+        if self._state == STATE_SPEAKING:
+            # Open / wavy mouth
+            path.moveTo(cx - mouth_w * 0.5, mouth_y)
+            cp1x = cx - mouth_w * 0.2
+            cp2x = cx + mouth_w * 0.2
+            amp  = mouth_h * (0.5 + 0.5 * math.sin(self._phase * 3))
+            path.cubicTo(cp1x, mouth_y + amp, cp2x, mouth_y - amp, cx + mouth_w * 0.5, mouth_y)
+        elif self._state == STATE_THINKING:
+            # Flat / pensive
+            path.moveTo(cx - mouth_w * 0.35, mouth_y)
+            path.lineTo(cx + mouth_w * 0.35, mouth_y)
+        elif self._state in (STATE_IDLE, STATE_LISTENING):
+            # Slight smile
+            path.moveTo(cx - mouth_w * 0.4, mouth_y)
+            path.cubicTo(
+                cx - mouth_w * 0.1, mouth_y + mouth_h,
+                cx + mouth_w * 0.1, mouth_y + mouth_h,
+                cx + mouth_w * 0.4, mouth_y,
+            )
+        else:
+            # Sleeping – small squiggle
+            path.moveTo(cx - mouth_w * 0.25, mouth_y)
+            path.cubicTo(
+                cx - mouth_w * 0.05, mouth_y + mouth_h * 0.5,
+                cx + mouth_w * 0.05, mouth_y - mouth_h * 0.5,
+                cx + mouth_w * 0.25, mouth_y,
+            )
+        p.drawPath(path)
+
+    def _draw_speak_ring(self, p: QPainter, cx: float, cy: float, r: float) -> None:
+        """Pulsing ring around the orb when speaking."""
+        n_rings = 3
+        for i in range(n_rings):
+            offset  = i * 12
+            alpha   = int(80 * self._speak_amp * (1 - i / n_rings))
+            wave_r  = r + offset + 6 * math.sin(self._phase + i * 1.2)
+            ring_c  = QColor(255, 200, 80, alpha)
+            p.setPen(QPen(ring_c, 1.5))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawEllipse(QPointF(cx, cy), wave_r, wave_r)
+
+    def _draw_stat_bars(self, p: QPainter) -> None:
+        """Small energy/mood bar strip at the bottom of the window."""
+        bw    = 90       # bar total width
+        bh    = 5        # bar height
+        x0    = (WIN_SIZE - bw) / 2
+        y_e   = WIN_SIZE - 28
+        y_m   = WIN_SIZE - 18
+        gap   = 3        # gap between rail and fill
+
+        for (y, val, col) in [
+            (y_e, self._energy, QColor(100, 220, 255, 180)),
+            (y_m, self._mood,   QColor(255, 140, 200, 180)),
+        ]:
+            # Rail
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QBrush(QColor(255, 255, 255, 30)))
+            p.drawRoundedRect(QRectF(x0, y, bw, bh), bh / 2, bh / 2)
+            # Fill
+            fill_w = max(bh, bw * (val / STAT_MAX))
+            p.setBrush(QBrush(col))
+            p.drawRoundedRect(QRectF(x0, y, fill_w, bh), bh / 2, bh / 2)
+
+    def _draw_label(self, p: QPainter) -> None:
+        """Tiny state label below the stat bars."""
+        labels = {
+            STATE_IDLE:      "idle",
+            STATE_LISTENING: "listening…",
+            STATE_THINKING:  "thinking…",
+            STATE_SPEAKING:  "speaking",
+            STATE_SLEEPING:  "sleeping…",
+        }
+        text = labels.get(self._state, "")
+        p.setPen(QPen(QColor(255, 255, 255, 100)))
+        f = QFont("Sans Serif", 8)
+        p.setFont(f)
+        p.drawText(QRectF(0, WIN_SIZE - 10, WIN_SIZE, 10),
+                   Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom, text)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Transcript overlay
+# ─────────────────────────────────────────────────────────────────────────────
+class TranscriptBubble(QWidget):
+    """A small chat bubble that pops up and fades when text arrives."""
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setWindowFlags(
+            Qt.WindowType.FramelessWindowHint |
+            Qt.WindowType.Tool |
+            Qt.WindowType.WindowStaysOnTopHint
+        )
+        self._text = ""
+        self._alpha = 0
+        self._fade_timer = QTimer(self)
+        self._fade_timer.timeout.connect(self._fade)
+        self.setFixedSize(260, 80)
+
+    def show_text(self, role: str, text: str) -> None:
+        prefix = "🎙 " if role == "user" else "💬 "
+        self._text = prefix + text[:120] + ("…" if len(text) > 120 else "")
+        self._alpha = 240
+        self._fade_timer.stop()
+        QTimer.singleShot(2500, self._start_fade)
+        self.show()
+        self.update()
+
+    def _start_fade(self) -> None:
+        self._fade_timer.start(40)
+
+    def _fade(self) -> None:
+        self._alpha = max(0, self._alpha - 12)
+        self.update()
+        if self._alpha == 0:
+            self._fade_timer.stop()
+            self.hide()
+
+    def paintEvent(self, _event) -> None:  # noqa: N802
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        bg = QColor(15, 15, 30, int(self._alpha * 0.85))
+        p.setBrush(QBrush(bg))
+        p.setPen(QPen(QColor(255, 255, 255, int(self._alpha * 0.3)), 1))
+        p.drawRoundedRect(self.rect(), 12, 12)
+        text_c = QColor(220, 220, 255, self._alpha)
+        p.setPen(QPen(text_c))
+        f = QFont("Sans Serif", 9)
+        p.setFont(f)
+        p.drawText(self.rect().adjusted(10, 8, -10, -8),
+                   Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter |
+                   Qt.TextFlag.TextWordWrap,
+                   self._text)
+        p.end()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Main Window
+# ─────────────────────────────────────────────────────────────────────────────
+class MashWindow(QWidget):
+    """
+    Frameless, transparent, always-on-top desktop widget.
+    Contains the OrbCanvas and wires LiveKit signals to it.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._drag_pos: QPoint | None = None
+
+        # ── window flags ──────────────────────────────────────────────────────
+        self.setWindowFlags(
+            Qt.WindowType.FramelessWindowHint |
+            Qt.WindowType.WindowStaysOnTopHint |
+            Qt.WindowType.Tool,
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setFixedSize(WIN_SIZE, WIN_SIZE)
+        self.setWindowTitle("Mash")
+
+        # Icon
+        icon_path = Path(__file__).parent / "icon.jpeg"
+        if icon_path.exists():
+            self.setWindowIcon(QIcon(str(icon_path)))
+
+        # ── orb canvas ────────────────────────────────────────────────────────
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self._orb = OrbCanvas(self)
+        layout.addWidget(self._orb)
+
+        # ── transcript bubble ─────────────────────────────────────────────────
+        self._bubble = TranscriptBubble()
+
+        # ── tray icon ─────────────────────────────────────────────────────────
+        self._setup_tray(icon_path)
+
+        # ── livekit worker ────────────────────────────────────────────────────
+        self._worker = LiveKitWorker(self)
+        self._worker.start()
+
+        # ── connect signals ───────────────────────────────────────────────────
+        bus.state_changed.connect(self._on_state)
+        bus.stats_updated.connect(self._on_stats)
+        bus.transcript_rx.connect(self._on_transcript)
+        bus.connected.connect(self._on_connected)
+        bus.disconnected.connect(self._on_disconnected)
+        bus.error.connect(self._on_error)
+
+        # ── position: bottom-right corner ─────────────────────────────────────
+        screen = QApplication.primaryScreen().availableGeometry()
+        self.move(screen.right() - WIN_SIZE - 20, screen.bottom() - WIN_SIZE - 20)
+        self.show()
+
+    # ── tray ──────────────────────────────────────────────────────────────────
+    def _setup_tray(self, icon_path: Path) -> None:
+        icon = QIcon(str(icon_path)) if icon_path.exists() else QIcon()
+        self._tray = QSystemTrayIcon(icon, self)
+        menu = QMenu()
+        menu.addAction("Show / Hide",  self._toggle_visible)
+        menu.addAction("Reset position", self._reset_position)
+        menu.addSeparator()
+        menu.addAction("Quit Mash", QApplication.instance().quit)
+        self._tray.setContextMenu(menu)
+        self._tray.setToolTip("Mash – virtual desktop agent")
+        self._tray.activated.connect(self._tray_activated)
+        self._tray.show()
+
+    def _toggle_visible(self) -> None:
+        self.setVisible(not self.isVisible())
+
+    def _reset_position(self) -> None:
+        screen = QApplication.primaryScreen().availableGeometry()
+        self.move(screen.right() - WIN_SIZE - 20, screen.bottom() - WIN_SIZE - 20)
+
+    @pyqtSlot(QSystemTrayIcon.ActivationReason)
+    def _tray_activated(self, reason) -> None:
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            self._toggle_visible()
+
+    # ── drag to move ──────────────────────────────────────────────────────────
+    def mousePressEvent(self, ev) -> None:  # noqa: N802
+        if ev.button() == Qt.MouseButton.LeftButton:
+            self._drag_pos = ev.globalPosition().toPoint() - self.frameGeometry().topLeft()
+
+    def mouseMoveEvent(self, ev) -> None:   # noqa: N802
+        if self._drag_pos and ev.buttons() & Qt.MouseButton.LeftButton:
+            self.move(ev.globalPosition().toPoint() - self._drag_pos)
+            self._reposition_bubble()
+
+    def mouseReleaseEvent(self, ev) -> None:  # noqa: N802
+        self._drag_pos = None
+
+    # ── signal handlers ───────────────────────────────────────────────────────
+    @pyqtSlot(str)
+    def _on_state(self, state: str) -> None:
+        if state == STATE_LISTENING and self._orb._state != STATE_LISTENING:
+            self._play_beep()
+        self._orb.set_state(state)
+
+    @pyqtSlot(float, float)
+    def _on_stats(self, energy: float, mood: float) -> None:
+        self._orb.set_stats(energy, mood)
+
+    @pyqtSlot(str, str)
+    def _on_transcript(self, role: str, text: str) -> None:
+        self._bubble.show_text(role, text)
+        self._reposition_bubble()
+
+    @pyqtSlot()
+    def _on_connected(self) -> None:
+        logger.info("UI: connected to Mash brain")
+        self._orb.set_state(STATE_IDLE)
+
+    @pyqtSlot()
+    def _on_disconnected(self) -> None:
+        logger.info("UI: disconnected from Mash brain")
+        self._orb.set_state(STATE_SLEEPING)
+
+    @pyqtSlot(str)
+    def _on_error(self, msg: str) -> None:
+        logger.error("LiveKit error: %s", msg)
+
+    def _reposition_bubble(self) -> None:
+        gp = self.mapToGlobal(QPoint(0, 0))
+        self._bubble.move(gp.x() - 270, gp.y() + 40)
+
+    def _play_beep(self) -> None:
+        """Plays a short, pleasant 'ready' chime using sounddevice."""
+        import threading
+        def _beep_thread():
+            try:
+                import sounddevice as sd
+                import numpy as np
+                fs = 44100
+                duration = 0.15
+                f = 880.0
+                samples = (np.sin(2 * np.pi * np.arange(fs * duration) * f / fs)).astype(np.float32)
+                # Quick fade in/out
+                fade = int(fs * 0.05)
+                samples[:fade] *= np.linspace(0, 1, fade)
+                samples[-fade:] *= np.linspace(1, 0, fade)
+                sd.play(samples * 0.04, fs)
+            except Exception as exc:
+                logger.debug("beep failed: %s", exc)
+        threading.Thread(target=_beep_thread, daemon=True).start()
+
+    # ── close → stop worker ──────────────────────────────────────────────────
+    def closeEvent(self, ev) -> None:  # noqa: N802
+        self._worker.stop()
+        self._worker.wait(3000)
+        ev.accept()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Main
+# ─────────────────────────────────────────────────────────────────────────────
+def main() -> None:
+    app = QApplication(sys.argv)
+    app.setApplicationName("Mash")
+    app.setQuitOnLastWindowClosed(False)   # keep running via tray
+
+    # Load system font
+    QFontDatabase.addApplicationFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+
+    win = MashWindow()
+    sys.exit(app.exec())
+
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = MashWindow()
-    window.show()
-    sys.exit(app.exec())
+    main()
