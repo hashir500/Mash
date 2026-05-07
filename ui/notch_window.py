@@ -294,12 +294,15 @@ class NotchWindow(QWidget):
 
     def _on_token(self, token: str):
         self._panel.chat.append_token(token)
-        self._char.set_thinking(False)
+        if self._char._is_thinking:
+            self._char.set_thinking(False)
+            self._char.set_writing(True)
 
     def _on_done(self):
         self._panel.chat.finalize_assistant_message()
         self._panel.input.set_enabled(True)
         self._char.set_thinking(False)
+        self._char.set_writing(False)  # triggers paper airplane
         self._worker = None
 
     def _on_error(self, msg: str):
@@ -307,6 +310,7 @@ class NotchWindow(QWidget):
         self._panel.chat.finalize_assistant_message()
         self._panel.input.set_enabled(True)
         self._char.set_thinking(False)
+        self._char.set_writing(False)
         self._worker = None
 
     def _tick_pulse(self):

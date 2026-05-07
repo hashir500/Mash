@@ -3,31 +3,18 @@ import math
 import random
 from PyQt6.QtWidgets import QWidget
 from PyQt6.QtCore import Qt, QTimer, QRectF, QPointF
-from PyQt6.QtGui import QPainter, QColor, QRadialGradient, QPen, QLinearGradient
+from PyQt6.QtGui import QPainter, QColor, QRadialGradient, QPen, QLinearGradient, QPainterPath
 
-# Fixed neural node positions (relative to center, normalized -1..1)
+# Neural network constants
 _NODE_POSITIONS = [
-    ( 0.00, -0.55),  # top center
-    (-0.38, -0.30),  # top left
-    ( 0.38, -0.30),  # top right
-    (-0.55,  0.05),  # mid left
-    ( 0.55,  0.05),  # mid right
-    (-0.30,  0.40),  # bot left
-    ( 0.30,  0.40),  # bot right
-    ( 0.00,  0.60),  # bottom center
+    ( 0.00, -0.55), (-0.38, -0.30), ( 0.38, -0.30),
+    (-0.55,  0.05), ( 0.55,  0.05), (-0.30,  0.40),
+    ( 0.30,  0.40), ( 0.00,  0.60),
+]
+_EDGES = [
+    (0,1),(0,2),(1,2),(1,3),(2,4),(3,4),(3,5),(4,6),(5,6),(5,7),(6,7),(0,3),(0,4),
 ]
 
-# Edges connecting nodes (index pairs)
-_EDGES = [
-    (0, 1), (0, 2),
-    (1, 2), (1, 3),
-    (2, 4),
-    (3, 4), (3, 5),
-    (4, 6),
-    (5, 6), (5, 7),
-    (6, 7),
-    (0, 3), (0, 4),
-]
 
 class CharacterWidget(QWidget):
     def __init__(self, parent=None):
@@ -35,61 +22,96 @@ class CharacterWidget(QWidget):
         self._tick = 0
         self._is_thinking = False
         self._think_tick = 0
+        self._is_writing = False
+        self._write_tick = 0
+        self._write_lines = []          # accumulated scribble lines
+        self._send_tick = -1            # -1 = not sending yet
+        self._plane_x = 0.0
+        self._plane_y = 0.0
 
-        # Per-node firing phase offsets (random so they don't all pulse together)
         self._node_phases = [random.uniform(0, math.pi * 2) for _ in _NODE_POSITIONS]
-        # Per-edge signal travel positions (0..1, -1 = inactive)
         self._edge_signals = [-1.0] * len(_EDGES)
-        self._edge_timers = [random.uniform(0, 3.0) for _ in _EDGES]
+        self._edge_timers  = [random.uniform(0, 3.0) for _ in _EDGES]
 
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._update_anim)
         self._timer.start(30)
 
-        self._anim_state = "LOOKING"
-        self._state_tick = 0
+        self._anim_state   = "LOOKING"
+        self._state_tick   = 0
         self._blink_factor = 1.0
-        self._is_blinking = False
+        self._is_blinking  = False
 
     # ── Public API ─────────────────────────────────────────────────────────
 
     def set_thinking(self, thinking: bool):
         self._is_thinking = thinking
-        self._think_tick = 0
+        self._think_tick  = 0
         if thinking:
-            # Reset signal positions
             self._edge_signals = [-1.0] * len(_EDGES)
+            self._is_writing = False
+            self._send_tick  = -1
+        self.update()
+
+    def set_writing(self, writing: bool):
+        """Called when the AI starts/stops streaming its response."""
+        self._is_thinking = False
+        if writing:
+            self._is_writing = True
+            self._write_tick = 0
+            self._write_lines = []
+            self._send_tick  = -1
+        else:
+            # Start the paper-airplane send sequence
+            self._is_writing = False
+            self._send_tick  = 0
+            self._plane_x    = 0.0
+            self._plane_y    = 0.0
         self.update()
 
     # ── Animation loop ─────────────────────────────────────────────────────
 
     def _update_anim(self):
         self._tick += 1
+
         if self._is_thinking:
             self._think_tick += 1
-            dt = 0.030  # seconds per tick
-            # Advance signal "bullets" along edges
+            dt = 0.030
             for i in range(len(_EDGES)):
                 self._edge_timers[i] -= dt
                 if self._edge_timers[i] <= 0:
                     self._edge_signals[i] = 0.0
-                    self._edge_timers[i] = random.uniform(0.4, 1.8)
+                    self._edge_timers[i]  = random.uniform(0.4, 1.8)
                 if self._edge_signals[i] >= 0:
                     self._edge_signals[i] += 0.035
                     if self._edge_signals[i] > 1.0:
                         self._edge_signals[i] = -1.0
+
+        elif self._is_writing:
+            self._write_tick += 1
+            # Add a new scribble point every ~8 ticks
+            if self._write_tick % 8 == 0:
+                self._write_lines.append(self._write_tick)
+
+        elif self._send_tick >= 0:
+            self._send_tick += 1
+            # Phase 1 (0-30): paper folds into airplane (just visualised)
+            # Phase 2 (30-90): airplane launches right and up, fading
+            if self._send_tick > 90:
+                self._send_tick  = -1   # back to idle
+                self._anim_state = "LOOKING"
+                self._state_tick = 0
+
         else:
-            # Idle blink
+            # Idle blinking / state machine
             if self._is_blinking:
                 self._blink_factor -= 0.35
                 if self._blink_factor <= 0.0:
                     self._blink_factor = 0.0
-                    self._is_blinking = False
+                    self._is_blinking  = False
             elif self._anim_state != "YAWNING":
-                if self._blink_factor < 1.0:
-                    self._blink_factor = min(1.0, self._blink_factor + 0.2)
+                self._blink_factor = min(1.0, self._blink_factor + 0.2)
 
-            # Idle state machine
             if self._anim_state == "LOOKING":
                 self._state_tick += 1
                 if self._state_tick > 150 and random.random() < 0.3:
@@ -121,7 +143,6 @@ class CharacterWidget(QWidget):
     def _draw_glowing_pill(self, p, rect, inner=None, glow_alpha=140):
         cx, cy = rect.center().x(), rect.center().y()
         radius = max(rect.width(), rect.height()) * 1.8
-
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
         grad = QRadialGradient(cx, cy, radius)
         grad.setColorAt(0.0, QColor(0, 100, 255, glow_alpha))
@@ -130,7 +151,6 @@ class CharacterWidget(QWidget):
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(grad)
         p.drawRect(int(cx - radius), int(cy - radius), int(radius * 2), int(radius * 2))
-
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
         p.setBrush(inner or QColor(230, 245, 255))
         corner_r = min(rect.width(), rect.height()) / 2.0
@@ -140,69 +160,227 @@ class CharacterWidget(QWidget):
         nx, ny = _NODE_POSITIONS[idx]
         return cx + nx * rx, cy + ny * ry
 
-    # ── Thinking / Neural Brain Animation ─────────────────────────────────
+    # ── Writing animation ──────────────────────────────────────────────────
+
+    def _draw_writing_anim(self, p, w, h):
+        cx, cy = w / 2.0, h / 2.0
+        t = self._write_tick
+        float_y = math.sin(t * 0.07) * 3.0  # subtle hover, leaning into work
+
+        # ── Paper ────────────────────────────────────────────────────────
+        paper_w, paper_h = 90, 68
+        paper_x = cx - paper_w / 2.0
+        paper_y = cy + 8 + float_y
+
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+        p.setPen(QPen(QColor(200, 210, 255, 60), 1))
+        p.setBrush(QColor(15, 15, 30, 200))
+        p.drawRoundedRect(QRectF(paper_x, paper_y, paper_w, paper_h), 6, 6)
+
+        # Horizontal ruled lines on paper
+        for i in range(4):
+            ly = paper_y + 14 + i * 14
+            p.setPen(QPen(QColor(100, 130, 255, 30), 1))
+            p.drawLine(QPointF(paper_x + 8, ly), QPointF(paper_x + paper_w - 8, ly))
+
+        # ── Scribble writing (lines grow progressively) ──────────────────
+        line_coords = [
+            (paper_x + 8, paper_y + 14, paper_x + paper_w - 8, paper_y + 14),
+            (paper_x + 8, paper_y + 28, paper_x + paper_w - 18, paper_y + 28),
+            (paper_x + 8, paper_y + 42, paper_x + paper_w - 8, paper_y + 42),
+            (paper_x + 8, paper_y + 56, paper_x + paper_w - 24, paper_y + 56),
+        ]
+        num_lines = len(self._write_lines)
+        for i, (x0, y0, x1, y1) in enumerate(line_coords):
+            if i < num_lines:
+                # Full line written
+                p.setPen(QPen(QColor(180, 210, 255, 180), 1.5))
+                p.drawLine(QPointF(x0, y0), QPointF(x1, y1))
+            elif i == num_lines:
+                # Currently being written — partial
+                progress = (t % 30) / 30.0
+                mid_x = x0 + (x1 - x0) * progress
+                p.setPen(QPen(QColor(200, 230, 255, 220), 1.5))
+                p.drawLine(QPointF(x0, y0), QPointF(mid_x, y0))
+
+                # Pen cursor glow at tip
+                p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
+                g = QRadialGradient(mid_x, y0, 8)
+                g.setColorAt(0, QColor(0, 180, 255, 200))
+                g.setColorAt(1, QColor(0, 0, 0, 0))
+                p.setBrush(g)
+                p.setPen(Qt.PenStyle.NoPen)
+                p.drawEllipse(QRectF(mid_x - 8, y0 - 8, 16, 16))
+                p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+
+        # ── Face (eyes looking DOWN at paper) ────────────────────────────
+        look_y = 14.0  # gaze aimed down at work
+        look_x = math.sin(t * 0.1) * 3.0  # slight side drift (reading)
+
+        eye_w, eye_h = 42, max(4.0, 60 * 0.5)  # half-open, focused squint
+        eye_spacing = 80
+        eye_y = cy - eye_h / 2.0 + float_y - 38 + look_y
+        lx = cx - eye_spacing / 2.0 - eye_w / 2.0 + look_x
+        rx = cx + eye_spacing / 2.0 - eye_w / 2.0 + look_x
+
+        self._draw_glowing_pill(p, QRectF(lx, eye_y, eye_w, eye_h), glow_alpha=160)
+        self._draw_glowing_pill(p, QRectF(rx, eye_y, eye_w, eye_h), glow_alpha=160)
+
+        # ── Arms / hands ─────────────────────────────────────────────────
+        arm_y_top = cy - 30 + float_y
+        arm_y_bot = paper_y + 10
+
+        # Left arm (resting on paper)
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
+        p.setPen(QPen(QColor(0, 80, 200, 80), 5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+        p.drawLine(QPointF(cx - 55, arm_y_top), QPointF(cx - 30, arm_y_bot))
+
+        # Right arm (holding pen, actively writing) — slight up-down bob
+        pen_bob = math.sin(t * 0.25) * 3
+        p.setPen(QPen(QColor(0, 100, 255, 100), 5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+        p.drawLine(QPointF(cx + 55, arm_y_top), QPointF(cx + 20, arm_y_bot + pen_bob))
+
+        # Pen nib
+        pen_tip_x = cx + 20
+        pen_tip_y = arm_y_bot + pen_bob
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+        p.setPen(QPen(QColor(220, 235, 255, 220), 2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+        p.drawLine(QPointF(pen_tip_x, pen_tip_y), QPointF(pen_tip_x + 8, pen_tip_y + 10))
+
+    # ── Sending / paper airplane animation ────────────────────────────────
+
+    def _draw_sending_anim(self, p, w, h):
+        cx, cy = w / 2.0, h / 2.0
+        t = self._send_tick
+
+        if t < 30:
+            # Phase 1: Fold — paper squishes into a triangle (scale-down + rotate)
+            progress = t / 30.0
+            paper_w = 90 * (1 - progress * 0.7)
+            paper_h = 68 * (1 - progress * 0.85)
+            px = cx - paper_w / 2.0
+            py = cy + 8
+
+            p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+            p.save()
+            p.translate(cx, cy + 8 + paper_h / 2)
+            p.rotate(progress * 20)
+            p.translate(-cx, -(cy + 8 + paper_h / 2))
+
+            p.setPen(QPen(QColor(200, 210, 255, int(200 * (1 - progress * 0.3))), 1))
+            p.setBrush(QColor(15, 15, 30, 200))
+            p.drawRoundedRect(QRectF(cx - paper_w / 2, cy + 8, paper_w, paper_h), 4, 4)
+            p.restore()
+
+        else:
+            # Phase 2: Launch airplane off screen to the right and up
+            flight = (t - 30) / 60.0  # 0..1
+            eased = 1 - (1 - flight) ** 3  # ease in cubic
+
+            plane_x = cx + eased * (w * 0.7)
+            plane_y = cy + 8 - eased * (h * 0.6)
+            plane_size = 24 * (1 - eased * 0.5)
+            alpha = int(255 * (1 - eased))
+
+            # Draw paper airplane shape
+            p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
+            p.save()
+            angle = -35 - eased * 10
+            p.translate(plane_x, plane_y)
+            p.rotate(angle)
+
+            path = QPainterPath()
+            s = plane_size
+            path.moveTo(s, 0)       # nose tip
+            path.lineTo(-s * 0.6, -s * 0.5)   # top wing
+            path.lineTo(-s * 0.2, 0)
+            path.lineTo(-s * 0.6, s * 0.5)    # bottom wing
+            path.closeSubpath()
+
+            p.setPen(QPen(QColor(0, 180, 255, alpha), 1.5))
+            p.setBrush(QColor(30, 80, 200, alpha // 2))
+            p.drawPath(path)
+
+            # Glow around plane
+            g = QRadialGradient(0, 0, plane_size * 2)
+            g.setColorAt(0.0, QColor(0, 140, 255, alpha // 2))
+            g.setColorAt(1.0, QColor(0, 0, 0, 0))
+            p.setBrush(g)
+            p.setPen(Qt.PenStyle.NoPen)
+            p.drawEllipse(QRectF(-plane_size * 2, -plane_size * 2, plane_size * 4, plane_size * 4))
+
+            p.restore()
+            p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+
+            # Trail
+            trail_len = 5
+            for i in range(trail_len):
+                tf = max(0, eased - i * 0.05)
+                tx = cx + tf * (w * 0.7)
+                ty = cy + 8 - tf * (h * 0.6)
+                ta = int(120 * (1 - i / trail_len) * (1 - eased))
+                tr = 2 - i * 0.3
+                p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
+                g2 = QRadialGradient(tx, ty, tr * 3)
+                g2.setColorAt(0, QColor(0, 160, 255, ta))
+                g2.setColorAt(1, QColor(0, 0, 0, 0))
+                p.setBrush(g2)
+                p.setPen(Qt.PenStyle.NoPen)
+                p.drawEllipse(QRectF(tx - tr * 3, ty - tr * 3, tr * 6, tr * 6))
+
+        # Always show face watching the action
+        look_x = min(40.0, self._send_tick * 1.5) if t > 25 else 0
+        look_y = -5.0
+        float_y = 0
+        eye_w, eye_h = 42, max(4.0, 76 * 0.6)
+        eye_spacing = 80
+        eye_y = cy - eye_h / 2.0 + float_y - 38 + look_y
+        lx = cx - eye_spacing / 2.0 - eye_w / 2.0 + look_x
+        rx = cx + eye_spacing / 2.0 - eye_w / 2.0 + look_x
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+        self._draw_glowing_pill(p, QRectF(lx, eye_y, eye_w, eye_h))
+        self._draw_glowing_pill(p, QRectF(rx, eye_y, eye_w, eye_h))
+
+    # ── Thinking / neural network animation ───────────────────────────────
 
     def _draw_thinking_anim(self, p, w, h):
         cx, cy = w / 2.0, h / 2.0
         t = self._think_tick
-        # Brain network occupies most of the space
         rx, ry = w * 0.42, h * 0.42
 
-        # ── Rotating outer rings (machine feel) ─────────────────────────
-        for ring_idx, (ring_r, speed, dashes, width, alpha) in enumerate([
+        for ring_r, speed, dashes, width, alpha in [
             (min(w, h) * 0.47, 0.012, 6, 1.2, 35),
             (min(w, h) * 0.38, -0.020, 4, 0.8, 25),
-        ]):
+        ]:
             angle_offset = t * speed
-            pen_color = QColor(0, 120, 255, alpha)
             dash_arc = 360.0 / (dashes * 2)
-
             p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
-            pen = QPen(pen_color, width)
+            pen = QPen(QColor(0, 120, 255, alpha), width)
             pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             p.setPen(pen)
             p.setBrush(Qt.BrushStyle.NoBrush)
-
             for d in range(dashes):
                 start_angle = int((angle_offset * 180 / math.pi + d * 360 / dashes) * 16)
-                span_angle = int(dash_arc * 16)
-                ring_rect = QRectF(cx - ring_r, cy - ring_r, ring_r * 2, ring_r * 2)
-                p.drawArc(ring_rect, start_angle, span_angle)
+                p.drawArc(QRectF(cx - ring_r, cy - ring_r, ring_r * 2, ring_r * 2),
+                          start_angle, int(dash_arc * 16))
 
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
-
-        # ── Draw edges ───────────────────────────────────────────────────
         for i, (a, b) in enumerate(_EDGES):
             ax, ay = self._node_xy(a, cx, cy, rx, ry)
             bx, by = self._node_xy(b, cx, cy, rx, ry)
-
-            # Static dim edge
             p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
-            pen = QPen(QColor(0, 60, 180, 35), 0.8)
-            p.setPen(pen)
+            p.setPen(QPen(QColor(0, 60, 180, 35), 0.8))
             p.setBrush(Qt.BrushStyle.NoBrush)
             p.drawLine(QPointF(ax, ay), QPointF(bx, by))
-
-            # Traveling signal bullet
             sig = self._edge_signals[i]
             if sig >= 0:
                 sx = ax + (bx - ax) * sig
                 sy = ay + (by - ay) * sig
-
-                # Glow trail behind bullet
-                p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
-                trail_len = 0.25
-                t0 = max(0, sig - trail_len)
+                t0 = max(0, sig - 0.25)
                 tx0 = ax + (bx - ax) * t0
                 ty0 = ay + (by - ay) * t0
-                lg = QLinearGradient(tx0, ty0, sx, sy)
-                lg.setColorAt(0.0, QColor(0, 0, 0, 0))
-                lg.setColorAt(1.0, QColor(0, 180, 255, 200))
-                pen2 = QPen(QColor(0, 180, 255, 200), 1.5)
-                p.setPen(pen2)
+                p.setPen(QPen(QColor(0, 180, 255, 200), 1.5))
                 p.drawLine(QPointF(tx0, ty0), QPointF(sx, sy))
-
-                # Bright bullet head
                 p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
                 g = QRadialGradient(sx, sy, 6)
                 g.setColorAt(0.0, QColor(200, 230, 255, 255))
@@ -211,16 +389,12 @@ class CharacterWidget(QWidget):
                 p.setBrush(g)
                 p.drawEllipse(QRectF(sx - 6, sy - 6, 12, 12))
 
-        # ── Draw nodes ───────────────────────────────────────────────────
         for i, (nx, ny) in enumerate(_NODE_POSITIONS):
             x = cx + nx * rx
             y = cy + ny * ry
-            phase = self._node_phases[i]
-            pulse = 0.5 + 0.5 * math.sin(t * 0.1 + phase)
+            pulse = 0.5 + 0.5 * math.sin(t * 0.1 + self._node_phases[i])
             nr = 4 + 3 * pulse
             alpha = int(120 + 135 * pulse)
-
-            # Glow
             p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
             gg = QRadialGradient(x, y, nr * 3.5)
             gg.setColorAt(0.0, QColor(0, 160, 255, alpha))
@@ -228,20 +402,17 @@ class CharacterWidget(QWidget):
             p.setBrush(gg)
             p.setPen(Qt.PenStyle.NoPen)
             p.drawEllipse(QRectF(x - nr * 3.5, y - nr * 3.5, nr * 7, nr * 7))
-
-            # Core
             p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
             p.setBrush(QColor(200, 230, 255, min(255, alpha)))
             p.drawEllipse(QRectF(x - nr / 2, y - nr / 2, nr, nr))
 
-        # ── Scan line sweeping top to bottom ────────────────────────────
         scan_y = cy - ry + ((t * 1.8) % (ry * 2))
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
-        scan_grad = QLinearGradient(cx - rx, scan_y, cx + rx, scan_y)
-        scan_grad.setColorAt(0.0, QColor(0, 0, 0, 0))
-        scan_grad.setColorAt(0.5, QColor(0, 160, 255, 30))
-        scan_grad.setColorAt(1.0, QColor(0, 0, 0, 0))
-        p.fillRect(QRectF(cx - rx, scan_y - 1, rx * 2, 2), scan_grad)
+        sg = QLinearGradient(cx - rx, scan_y, cx + rx, scan_y)
+        sg.setColorAt(0.0, QColor(0, 0, 0, 0))
+        sg.setColorAt(0.5, QColor(0, 160, 255, 30))
+        sg.setColorAt(1.0, QColor(0, 0, 0, 0))
+        p.fillRect(QRectF(cx - rx, scan_y - 1, rx * 2, 2), sg)
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
 
     # ── paintEvent ────────────────────────────────────────────────────────
@@ -249,12 +420,17 @@ class CharacterWidget(QWidget):
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-
         w, h = self.width(), self.height()
         cx, cy = w / 2.0, h / 2.0
 
         if self._is_thinking:
             self._draw_thinking_anim(p, w, h)
+            return
+        if self._is_writing:
+            self._draw_writing_anim(p, w, h)
+            return
+        if self._send_tick >= 0:
+            self._draw_sending_anim(p, w, h)
             return
 
         # ── Idle face ─────────────────────────────────────────────────────
@@ -277,13 +453,8 @@ class CharacterWidget(QWidget):
                 look_y = -20 * (1 - f)
                 look_x = 12 * (1 - f)
         elif self._anim_state == "YAWNING":
-            yp = 0.0
-            if self._state_tick < 20:
-                yp = self._state_tick / 20.0
-            elif self._state_tick > 60:
-                yp = 1.0 - (self._state_tick - 60) / 20.0
-            else:
-                yp = 1.0
+            yp = (self._state_tick / 20.0 if self._state_tick < 20
+                  else 1.0 - (self._state_tick - 60) / 20.0 if self._state_tick > 60 else 1.0)
             mouth_w = 32 - yp * 10
             mouth_h = 16 + yp * 44
             float_y -= yp * 8.0
@@ -294,15 +465,13 @@ class CharacterWidget(QWidget):
         eye_w = 48
         eye_h = max(4.0, 76 * self._blink_factor)
         eye_spacing = 84
-
-        left_eye_x  = cx - eye_spacing / 2.0 - eye_w / 2.0 + look_x
-        right_eye_x = cx + eye_spacing / 2.0 - eye_w / 2.0 + look_x
+        lx = cx - eye_spacing / 2.0 - eye_w / 2.0 + look_x
+        rx = cx + eye_spacing / 2.0 - eye_w / 2.0 + look_x
         eye_y = cy - eye_h / 2.0 + float_y + look_y - 16
-
         mouth_x = cx - mouth_w / 2.0 + look_x * 1.2
         mouth_y = cy + 34 + float_y + (mouth_h / 2.0 if self._anim_state == "YAWNING" else 0)
         yawn_off = mouth_h if self._anim_state == "YAWNING" else 0
 
-        self._draw_glowing_pill(p, QRectF(left_eye_x, eye_y, eye_w, eye_h))
-        self._draw_glowing_pill(p, QRectF(right_eye_x, eye_y, eye_w, eye_h))
+        self._draw_glowing_pill(p, QRectF(lx, eye_y, eye_w, eye_h))
+        self._draw_glowing_pill(p, QRectF(rx, eye_y, eye_w, eye_h))
         self._draw_glowing_pill(p, QRectF(mouth_x, mouth_y - yawn_off, mouth_w, mouth_h))

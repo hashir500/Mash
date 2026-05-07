@@ -12,7 +12,7 @@ class StreamWorker(QThread):
     finished = pyqtSignal()
     error = pyqtSignal(str)
 
-    MODEL = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
+    MODEL = "google/gemma-4-26b-a4b-it:free"
     API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
     def __init__(self, messages: list, api_key: str, attachment_path: str = "", parent=None):
