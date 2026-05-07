@@ -175,12 +175,12 @@ class NotchWindow(QWidget):
 
     def _build_ui(self):
         self._content = QWidget(self)
-        self._content.setGeometry(0, PILL_H, CARD_W, CARD_H - PILL_H)
+        self._content.setGeometry(0, 0, CARD_W, CARD_H)
         self._content.setVisible(False)
         self._content.setStyleSheet("background: transparent;")
 
         layout = QVBoxLayout(self._content)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(8, 8, 8, 8)  # Thin even bezels on all sides
         layout.setSpacing(0)
 
         self._char = CharacterWidget()
@@ -228,7 +228,7 @@ class NotchWindow(QWidget):
         self._expanding = True
         self._animating = True
         self._content.setVisible(True)
-        self._content.setGeometry(0, PILL_H, CARD_W, CARD_H - PILL_H)
+        self._content.setGeometry(0, 0, CARD_W, CARD_H)
         self._geo_anim.setStartValue(self.geometry())
         self._geo_anim.setEndValue(self._expanded_rect())
         self._geo_anim.start()
@@ -355,8 +355,6 @@ class NotchWindow(QWidget):
 
         if self._state == State.COLLAPSED:
             self._paint_pill_content(p, w, h)
-        elif frac > 0.6:
-            self._paint_pill_label(p, w)
 
     def _paint_pill_content(self, p, w, h):
         p.setFont(QFont("Inter", 11, QFont.Weight.Medium))
