@@ -107,7 +107,7 @@ class FloatingPanel(QWidget):
     def align_to_parent(self):
         pr = self._parent_win.geometry()
         x = pr.x() + (pr.width() - self.width()) // 2
-        y = pr.y() + pr.height() + 10
+        y = pr.y() + pr.height() + 16  # Increased gap to 16px to prevent overlap
         self.move(x, y)
 
     def show_animated(self):
@@ -189,7 +189,7 @@ class NotchWindow(QWidget):
     def _setup_animations(self):
         self._geo_anim = QPropertyAnimation(self, b"geometry")
         self._geo_anim.setDuration(ANIM_MS)
-        self._geo_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._geo_anim.setEasingCurve(QEasingCurve.Type.OutBack)
         self._geo_anim.finished.connect(self._on_anim_done)
 
     def _screen_rect(self):
@@ -237,8 +237,15 @@ class NotchWindow(QWidget):
         if self._state == State.COLLAPSED or self._animating:
             return
         self._expanding = False
-        self._panel.hide_animated()
         self._animating = True
+        
+        # 1. Fade out the text panel
+        self._panel.hide_animated()
+        
+        # 2. Wait 200ms, then trigger the bouncy notch shrink
+        QTimer.singleShot(200, self._start_collapse_anim)
+
+    def _start_collapse_anim(self):
         self._geo_anim.setStartValue(self.geometry())
         self._geo_anim.setEndValue(self._collapsed_rect())
         self._geo_anim.start()
@@ -254,6 +261,7 @@ class NotchWindow(QWidget):
         else:
             self._state = State.COLLAPSED
             self._content.setVisible(False)
+            self._panel.hide()
         self.update()
 
     def _maybe_collapse(self):
@@ -261,7 +269,7 @@ class NotchWindow(QWidget):
             self.collapse()
             QTimer.singleShot(ANIM_MS + 50, self._ensure_on_top)
 
-    def _on_submit(self, text: str):
+    def _on_submit(self, text: str, attachment: str = ""):
         if not self._api_key:
             self._panel.chat.start_assistant_message()
             self._panel.chat.append_token("⚠️  No API key found. Set OPENROUTER_API_KEY in .env")
@@ -269,13 +277,16 @@ class NotchWindow(QWidget):
             return
 
         self._panel.chat.setVisible(True)
-        self._panel.chat.add_user_message(text)
+        # If no text but attached file, show a small indicator in chat
+        display_text = text if text else f"[File Attached]"
+        self._panel.chat.add_user_message(display_text)
+        
         self._history.append({"role": "user", "content": text})
         self._panel.input.set_enabled(False)
         self._char.set_thinking(True)
         self._panel.chat.start_assistant_message()
 
-        self._worker = StreamWorker(list(self._history), self._api_key, self)
+        self._worker = StreamWorker(list(self._history), self._api_key, attachment_path=attachment, parent=self)
         self._worker.token_received.connect(self._on_token)
         self._worker.finished.connect(self._on_done)
         self._worker.error.connect(self._on_error)
@@ -381,8 +392,16 @@ class NotchWindow(QWidget):
                 self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
                 self.show()
                 self.expand()
+            elif self._state == State.EXPANDED:
+                # Left-click the expanded notch to reveal the text panel
+                if not self._panel.isVisible() or self._panel._fx.opacity() == 0.0:
+                    self._panel.show_animated()
+                    self._panel.input.focus()
         elif event.button() == Qt.MouseButton.RightButton:
-            self.close()
+            if self._state == State.EXPANDED:
+                self.collapse()
+            else:
+                self.close()
 
     def mouseMoveEvent(self, event):
         if (event.buttons() == Qt.MouseButton.LeftButton
@@ -390,19 +409,10 @@ class NotchWindow(QWidget):
             self.move(event.globalPosition().toPoint() - self._drag_pos)
 
     def enterEvent(self, event):
-        if self._state == State.EXPANDED:
-            self._panel.show_animated()
-            self._panel.input.setVisible(True)
         super().enterEvent(event)
 
     def leaveEvent(self, event):
-        QTimer.singleShot(400, self._check_leave)
         super().leaveEvent(event)
-
-    def _check_leave(self):
-        # Only hide if the mouse is neither in the main notch nor in the floating panel
-        if not (self.geometry().contains(QCursor.pos()) or self._panel.geometry().contains(QCursor.pos())):
-            self._panel.hide_animated()
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape and self._state == State.EXPANDED:

@@ -1,23 +1,37 @@
 """InputBar — hover-reveal text input at the bottom of the expanded notch."""
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton, QFileDialog
 from PyQt6.QtCore import Qt, pyqtSignal, QPropertyAnimation, QEasingCurve
 from PyQt6.QtGui import QFont, QKeyEvent
-
+import os
 
 class InputBar(QWidget):
     """Slim text input that animates in/out via opacity."""
-    submitted = pyqtSignal(str)
+    submitted = pyqtSignal(str, str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFixedHeight(54)
+        self._attach_path = ""
         self._build_ui()
-        self.setVisible(False)
 
     def _build_ui(self):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(14, 8, 14, 8)
         layout.setSpacing(8)
+
+        self._attach_btn = QPushButton("+")
+        self._attach_btn.setFixedSize(34, 34)
+        self._attach_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._attach_btn.clicked.connect(self._toggle_attachment)
+        self._attach_btn.setStyleSheet("""
+            QPushButton {
+                background: rgba(255,255,255,0.1);
+                border: none; border-radius: 17px;
+                color: #ffffff; font-size: 18px; font-weight: bold;
+            }
+            QPushButton:hover { background: rgba(255,255,255,0.2); }
+            QPushButton:pressed { background: rgba(255,255,255,0.3); }
+        """)
 
         self._field = QLineEdit()
         self._field.setPlaceholderText("Type a message…")
@@ -55,14 +69,34 @@ class InputBar(QWidget):
             QPushButton:disabled { background: rgba(255,255,255,0.3); }
         """)
 
+        layout.addWidget(self._attach_btn)
         layout.addWidget(self._field)
         layout.addWidget(self._btn)
 
+    def _toggle_attachment(self):
+        if self._attach_path:
+            self._attach_path = ""
+            self._attach_btn.setText("+")
+            self._field.setPlaceholderText("Type a message…")
+        else:
+            path, _ = QFileDialog.getOpenFileName(
+                self, "Attach File", "", "Images & Docs (*.png *.jpg *.jpeg *.pdf *.txt *.csv *.md)"
+            )
+            if path:
+                self._attach_path = path
+                self._attach_btn.setText("×")
+                fname = os.path.basename(path)
+                self._field.setPlaceholderText(f"[Attached: {fname[:15]}] Type a message…")
+
     def _send(self):
         text = self._field.text().strip()
-        if text:
+        if text or self._attach_path:
             self._field.clear()
-            self.submitted.emit(text)
+            attached = self._attach_path
+            self._attach_path = ""
+            self._attach_btn.setText("+")
+            self._field.setPlaceholderText("Type a message…")
+            self.submitted.emit(text, attached)
 
     def set_enabled(self, enabled: bool):
         self._field.setEnabled(enabled)

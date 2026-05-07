@@ -1,6 +1,8 @@
 """OpenRouter streaming client for Mash."""
 import json
 import httpx
+import os
+import base64
 from PyQt6.QtCore import QThread, pyqtSignal
 
 
@@ -13,10 +15,11 @@ class StreamWorker(QThread):
     MODEL = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
     API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-    def __init__(self, messages: list, api_key: str, parent=None):
+    def __init__(self, messages: list, api_key: str, attachment_path: str = "", parent=None):
         super().__init__(parent)
         self.messages = messages
         self.api_key = api_key
+        self.attachment_path = attachment_path
         self._abort = False
 
     def abort(self):
@@ -24,6 +27,37 @@ class StreamWorker(QThread):
 
     def run(self):
         try:
+            # Handle attachment
+            if self.attachment_path and os.path.exists(self.attachment_path):
+                ext = self.attachment_path.lower().split('.')[-1]
+                if ext in ['png', 'jpg', 'jpeg']:
+                    with open(self.attachment_path, "rb") as f:
+                        b64 = base64.b64encode(f.read()).decode("utf-8")
+                        mime = f"image/{'jpeg' if ext == 'jpg' else ext}"
+                        # Format last user message as list
+                        last_msg = self.messages[-1]["content"]
+                        self.messages[-1]["content"] = [
+                            {"type": "text", "text": last_msg},
+                            {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}}
+                        ]
+                elif ext in ['txt', 'csv', 'md']:
+                    with open(self.attachment_path, "r", encoding="utf-8") as f:
+                        text = f.read()
+                        self.messages[-1]["content"] += f"\n\n[Attached File: {os.path.basename(self.attachment_path)}]\n{text}"
+                elif ext == 'pdf':
+                    try:
+                        import PyPDF2
+                        text = ""
+                        with open(self.attachment_path, "rb") as f:
+                            reader = PyPDF2.PdfReader(f)
+                            for page in reader.pages:
+                                text += page.extract_text() + "\n"
+                        self.messages[-1]["content"] += f"\n\n[Attached PDF: {os.path.basename(self.attachment_path)}]\n{text}"
+                    except Exception as e:
+                        self.error.emit(f"Failed to read PDF: {str(e)}")
+                        self.finished.emit()
+                        return
+
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json",
