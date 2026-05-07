@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Mash
+Comment=Dynamic Island AI Assistant powered by NVIDIA Nemotron
+Exec=/usr/bin/python3 /home/hashir/Documents/mash/mash.py
+Icon=/home/hashir/Documents/mash/icon.png
+Terminal=false
+Categories=Utility;Productivity;
+StartupNotify=false
+StartupWMClass=Mash
+Keywords=AI;Assistant;Chat;Mash;
