@@ -3,7 +3,7 @@ import math
 import random
 from PyQt6.QtWidgets import QWidget
 from PyQt6.QtCore import Qt, QTimer, QRectF, QPointF
-from PyQt6.QtGui import QPainter, QColor, QRadialGradient, QPen, QLinearGradient, QPainterPath
+from PyQt6.QtGui import QPainter, QColor, QRadialGradient, QPen, QLinearGradient, QPainterPath, QPixmap
 
 # Neural network constants
 _NODE_POSITIONS = [
@@ -41,6 +41,7 @@ class CharacterWidget(QWidget):
         self._state_tick   = 0
         self._blink_factor = 1.0
         self._is_blinking  = False
+        self._mode         = "general"
 
     # ── Public API ─────────────────────────────────────────────────────────
 
@@ -67,6 +68,10 @@ class CharacterWidget(QWidget):
             self._send_tick  = 0
             self._plane_x    = 0.0
             self._plane_y    = 0.0
+        self.update()
+
+    def set_mode(self, mode: str):
+        self._mode = mode
         self.update()
 
     # ── Animation loop ─────────────────────────────────────────────────────
@@ -343,6 +348,82 @@ class CharacterWidget(QWidget):
 
     # ── Thinking / neural network animation ───────────────────────────────
 
+    def _draw_scientist_anim(self, p, w, h):
+        cx, cy = w / 2.0, h / 2.0
+        t = self._tick
+        float_y = math.sin(t * 0.1) * 4.0
+        
+        # ── Lab Coat ──────────────────────────────────────────────────
+        p.setPen(QPen(QColor(255, 255, 255, 40), 1))
+        p.setBrush(QColor(255, 255, 255, 10))
+        coat = QPainterPath()
+        coat.moveTo(cx - 60, h)
+        coat.lineTo(cx - 30, cy + 20 + float_y)
+        coat.lineTo(cx + 30, cy + 20 + float_y)
+        coat.lineTo(cx + 60, h)
+        p.drawPath(coat)
+
+        # ── Beakers ────────────────────────────────────────────────────
+        shake = math.sin(t * 0.4) * 8
+        # Left beaker
+        p.setPen(QPen(QColor(0, 255, 150, 180), 2))
+        p.drawRoundedRect(QRectF(cx - 70, cy + 40 + float_y + shake, 25, 40), 4, 4)
+        # Liquid bubbling
+        for i in range(3):
+            bt = (t + i * 20) % 40
+            p.setBrush(QColor(0, 255, 150, int(200 * (1 - bt/40))))
+            p.drawEllipse(QRectF(cx - 65 + random.randint(-2,2), cy + 70 + float_y + shake - bt, 4, 4))
+            
+        # Right beaker
+        p.setPen(QPen(QColor(255, 100, 0, 180), 2))
+        p.drawRoundedRect(QRectF(cx + 45, cy + 40 + float_y - shake, 25, 40), 4, 4)
+
+        # ── Face ───────────────────────────────────────────────────────
+        eye_w, eye_h = 42, 36
+        eye_y = cy - 30 + float_y
+        p.setBrush(QColor(230, 245, 255))
+        self._draw_glowing_pill(p, QRectF(cx - 50, eye_y, eye_w, eye_h), glow_alpha=120)
+        self._draw_glowing_pill(p, QRectF(cx + 10, eye_y, eye_w, eye_h), glow_alpha=120)
+
+    def _draw_coder_anim(self, p, w, h):
+        cx, cy = w / 2.0, h / 2.0
+        t = self._tick
+        
+        # ── Laptop ────────────────────────────────────────────────────
+        p.setPen(QPen(QColor(100, 150, 255, 80), 2))
+        p.setBrush(QColor(10, 10, 25, 200))
+        # Screen
+        p.drawRoundedRect(QRectF(cx - 60, cy + 10, 120, 70), 4, 4)
+        # Keyboard base
+        p.drawRoundedRect(QRectF(cx - 70, cy + 75, 140, 10), 2, 2)
+        
+        # ── Screen Content (Lines) ────────────────────────────────────
+        p.setPen(QPen(QColor(0, 255, 150, 60), 1))
+        for i in range(5):
+            line_y = cy + 20 + i * 10
+            line_w = random.randint(30, 80)
+            p.drawLine(QPointF(cx - 50, line_y), QPointF(cx - 50 + line_w, line_y))
+
+        # ── Coffee ─────────────────────────────────────────────────────
+        p.setPen(QPen(QColor(150, 100, 50, 150), 2))
+        p.drawRoundedRect(QRectF(cx + 75, cy + 60, 20, 25), 3, 3)
+        # Steam
+        for i in range(2):
+            st = (t + i * 30) % 60
+            p.setPen(QPen(QColor(255, 255, 255, int(100 * (1 - st/60))), 1))
+            sx = cx + 85 + math.sin(st * 0.2) * 3
+            p.drawLine(QPointF(sx, cy + 55 - st/2), QPointF(sx, cy + 50 - st/2))
+
+        # ── Hands Typing ──────────────────────────────────────────────
+        if t % 4 < 2:
+            p.setBrush(QColor(255, 255, 255, 150))
+            p.drawEllipse(QRectF(cx - 40 + random.randint(-10,10), cy + 70, 6, 6))
+            p.drawEllipse(QRectF(cx + 30 + random.randint(-10,10), cy + 70, 6, 6))
+
+        # ── Face (Looking down) ───────────────────────────────────────
+        self._draw_glowing_pill(p, QRectF(cx - 45, cy - 35, 40, 10))
+        self._draw_glowing_pill(p, QRectF(cx + 5, cy - 35, 40, 10))
+
     def _draw_thinking_anim(self, p, w, h):
         cx, cy = w / 2.0, h / 2.0
         t = self._think_tick
@@ -424,7 +505,13 @@ class CharacterWidget(QWidget):
         cx, cy = w / 2.0, h / 2.0
 
         if self._is_thinking:
-            self._draw_thinking_anim(p, w, h)
+            # Use mode-specific thinking animation
+            if self._mode == "reasoning":
+                self._draw_scientist_anim(p, w, h)
+            elif self._mode == "coding":
+                self._draw_coder_anim(p, w, h)
+            else:
+                self._draw_thinking_anim(p, w, h)
             return
         if self._is_writing:
             self._draw_writing_anim(p, w, h)

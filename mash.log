@@ -1,0 +1,135 @@
+2026-05-08 09:30:56 - mash - INFO - Starting Mash 2.0...
+2026-05-08 09:31:07 - mash - DEBUG - Starting StreamWorker with model: meta-llama/llama-3.2-3b-instruct:free
+2026-05-08 09:31:11 - mash - DEBUG - OpenRouter Response Status: 429
+2026-05-08 09:31:11 - mash - DEBUG - StreamWorker finished
+2026-05-08 09:31:22 - mash - DEBUG - Starting StreamWorker with model: nvidia/nemotron-3-super-120b-a12b:free
+2026-05-08 09:31:32 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 09:33:04 - mash - DEBUG - StreamWorker finished
+2026-05-08 09:33:44 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 09:33:52 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 09:34:04 - mash - DEBUG - StreamWorker finished
+2026-05-08 09:37:19 - mash - INFO - Starting Mash 2.0...
+2026-05-08 09:38:20 - mash - INFO - Starting Mash 2.0...
+2026-05-08 09:38:25 - mash - DEBUG - Starting StreamWorker with model: nousresearch/hermes-3-llama-3.1-8b:free
+2026-05-08 09:38:35 - mash - DEBUG - OpenRouter Response Status: 400
+2026-05-08 09:38:35 - mash - DEBUG - StreamWorker finished
+2026-05-08 09:38:54 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 09:38:58 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 09:39:37 - mash - DEBUG - StreamWorker finished
+2026-05-08 09:40:40 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 09:40:45 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 09:41:13 - mash - DEBUG - StreamWorker finished
+2026-05-08 09:45:09 - mash - INFO - Starting Mash 2.0...
+2026-05-08 09:46:01 - mash - INFO - Starting Mash 2.0...
+2026-05-08 09:46:06 - mash - DEBUG - Starting StreamWorker with model: google/gemini-2.0-flash-lite-preview-02-05:free
+2026-05-08 09:46:08 - mash - DEBUG - OpenRouter Response Status: 400
+2026-05-08 09:46:08 - mash - DEBUG - StreamWorker finished
+2026-05-08 09:46:16 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 09:46:20 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 09:47:37 - mash - DEBUG - StreamWorker finished
+2026-05-08 09:47:48 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 09:47:53 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 09:48:21 - mash - DEBUG - StreamWorker finished
+2026-05-08 09:52:55 - mash - INFO - Starting Mash 2.0...
+2026-05-08 09:54:29 - mash - INFO - Starting Mash 2.0...
+2026-05-08 09:54:38 - mash - INFO - Starting Mash 2.0...
+2026-05-08 09:54:45 - mash - DEBUG - Starting StreamWorker with model: google/gemini-2.0-flash-lite-preview-02-05:free
+2026-05-08 09:54:47 - mash - DEBUG - Google API Status: 429
+2026-05-08 09:54:47 - mash - DEBUG - StreamWorker finished
+2026-05-08 09:55:23 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 09:55:23 - mash - DEBUG - Google API Status: 404
+2026-05-08 09:55:23 - mash - DEBUG - StreamWorker finished
+2026-05-08 09:55:33 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 09:55:34 - mash - DEBUG - Google API Status: 404
+2026-05-08 09:55:34 - mash - DEBUG - StreamWorker finished
+2026-05-08 09:55:49 - mash - INFO - Starting Mash 2.0...
+2026-05-08 09:56:16 - mash - DEBUG - Starting StreamWorker with model: google/gemini-2.0-flash-lite-preview-02-05:free
+2026-05-08 09:56:17 - mash - DEBUG - Google API Status: 429
+2026-05-08 09:56:17 - mash - DEBUG - StreamWorker finished
+2026-05-08 09:56:26 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 09:56:26 - mash - DEBUG - Google API Status: 404
+2026-05-08 09:56:26 - mash - DEBUG - StreamWorker finished
+2026-05-08 09:56:35 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 09:56:36 - mash - DEBUG - Google API Status: 404
+2026-05-08 09:56:36 - mash - DEBUG - StreamWorker finished
+2026-05-08 09:57:36 - mash - INFO - Starting Mash 2.0...
+2026-05-08 10:02:30 - mash - DEBUG - Starting StreamWorker with model: gemini-1.5-flash
+2026-05-08 10:02:32 - mash - DEBUG - Google API Status: 404
+2026-05-08 10:02:32 - mash - DEBUG - StreamWorker finished
+2026-05-08 10:05:02 - mash - INFO - Starting Mash 2.0...
+2026-05-08 10:06:30 - mash - INFO - Starting Mash 2.0...
+2026-05-08 10:06:35 - mash - DEBUG - Starting StreamWorker with model: qwen/qwen3-next-80b-a3b-instruct:free
+2026-05-08 10:06:38 - mash - DEBUG - OpenRouter Response Status: 402
+2026-05-08 10:06:38 - mash - DEBUG - StreamWorker finished
+2026-05-08 10:06:46 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 10:06:51 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 10:06:52 - mash - DEBUG - StreamWorker finished
+2026-05-08 10:07:09 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 10:07:12 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 10:07:17 - mash - DEBUG - StreamWorker finished
+2026-05-08 10:12:47 - mash - INFO - Starting Mash 2.0...
+2026-05-08 10:12:55 - mash - DEBUG - Starting StreamWorker with model: nvidia/nemotron-nano-12b-v2-vl:free
+2026-05-08 10:13:00 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 10:13:27 - mash - DEBUG - StreamWorker finished
+2026-05-08 10:13:49 - mash - DEBUG - Starting StreamWorker with model: nvidia/nemotron-nano-12b-v2-vl:free
+2026-05-08 10:13:53 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 10:14:36 - mash - DEBUG - StreamWorker finished
+2026-05-08 10:16:27 - mash - INFO - Starting Mash 2.0...
+2026-05-08 10:16:32 - mash - DEBUG - Starting StreamWorker with model: nvidia/nemotron-nano-12b-v2-vl:free
+2026-05-08 10:16:37 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 10:16:39 - mash - DEBUG - StreamWorker finished
+2026-05-08 10:16:51 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 10:16:55 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 10:17:13 - mash - DEBUG - StreamWorker finished
+2026-05-08 10:17:26 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 10:17:29 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 10:17:39 - mash - DEBUG - StreamWorker finished
+2026-05-08 10:22:18 - mash - INFO - Starting Mash 2.0...
+2026-05-08 10:22:32 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 10:22:43 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 10:23:13 - mash - DEBUG - StreamWorker finished
+2026-05-08 10:26:00 - mash - INFO - Starting Mash 2.0...
+2026-05-08 10:26:13 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 10:26:17 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 10:26:58 - mash - DEBUG - StreamWorker finished
+2026-05-08 10:36:15 - mash - INFO - Starting Mash 2.0...
+2026-05-08 10:36:26 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 10:36:34 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 10:36:51 - mash - DEBUG - StreamWorker finished
+2026-05-08 10:37:25 - mash - DEBUG - Starting StreamWorker with model: nvidia/nemotron-nano-12b-v2-vl:free
+2026-05-08 10:37:31 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 10:37:45 - mash - DEBUG - StreamWorker finished
+2026-05-08 11:04:08 - mash - INFO - Starting Mash 2.0...
+2026-05-08 11:04:46 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 11:04:51 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 11:05:10 - mash - DEBUG - StreamWorker finished
+2026-05-08 11:14:21 - mash - INFO - Starting Mash 2.0...
+2026-05-08 11:14:29 - mash - INFO - Starting Mash 2.0...
+2026-05-08 11:14:48 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 11:14:53 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 11:15:19 - mash - DEBUG - StreamWorker finished
+2026-05-08 11:15:34 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 11:15:38 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 11:15:46 - mash - DEBUG - StreamWorker finished
+2026-05-08 11:22:07 - mash - INFO - Starting Mash 2.0...
+2026-05-08 11:22:18 - mash - INFO - Starting Mash 2.0...
+2026-05-08 11:22:43 - mash - DEBUG - Starting StreamWorker with model: nvidia/nemotron-nano-12b-v2-vl:free
+2026-05-08 11:22:50 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 11:23:03 - mash - DEBUG - StreamWorker finished
+2026-05-08 11:23:26 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 11:23:31 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 11:24:08 - mash - DEBUG - StreamWorker finished
+2026-05-08 11:27:32 - mash - INFO - Starting Mash 2.0...
+2026-05-08 11:29:59 - mash - INFO - Starting Mash 2.0...
+2026-05-08 11:30:14 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 11:30:19 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 11:30:47 - mash - DEBUG - StreamWorker finished
+2026-05-08 11:36:39 - mash - INFO - Starting Mash 2.0...
+2026-05-08 11:37:38 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 11:37:46 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 11:38:17 - mash - DEBUG - StreamWorker finished
+2026-05-08 11:43:41 - mash - INFO - Starting Mash 2.0...
+2026-05-08 11:47:29 - mash - INFO - Starting Mash 2.0...
+2026-05-08 11:47:40 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 11:47:46 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 11:47:56 - mash - DEBUG - StreamWorker finished

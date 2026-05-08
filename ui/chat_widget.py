@@ -3,24 +3,89 @@ import os
 import re
 import datetime
 import markdown
+import base64
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QLabel,
-    QFrame, QSizePolicy, QPushButton, QFileDialog, QMessageBox
+    QFrame, QSizePolicy, QPushButton, QFileDialog, QMessageBox, QTextEdit, QApplication
 )
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QSize
+from PyQt6.QtGui import QFont, QColor, QPalette, QClipboard
 
+try:
+    from pygments import highlight
+    from pygments.lexers import get_lexer_by_name, guess_lexer
+    from pygments.formatters import HtmlFormatter
+    HAS_PYGMENTS = True
+except ImportError:
+    HAS_PYGMENTS = False
+
+# Store code for copying
+CODE_STORE = {}
 
 def _md_to_html(text: str) -> str:
     try:
+        # Use fenced_code and tables
         html = markdown.markdown(text, extensions=['tables', 'fenced_code', 'nl2br'])
+        
+        # Post-process <pre> blocks to wrap them in a styled table with highlighting and copy button
+        def wrap_code(match):
+            lang = match.group(1) or "code"
+            code_content = match.group(2).strip()
+            
+            # Use a simpler ID for testing
+            code_id = f"code_{len(CODE_STORE)}"
+            CODE_STORE[code_id] = code_content
+            
+            # Hollow white copy icon SVG (base64)
+            svg_icon = "PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjkiIHk9IjkiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxMyIgcng9IjIiIHJ5PSIyIj48L3JlY3Q+PHBhdGggZD0iTTUgMTVINGEyIDIgMCAwIDEtMi0yVjRhMiAyIDAgMCAxIDItMmg5YTIgMiAwIDAgMSAyIDJ2MSI+PC9wYXRoPjwvc3ZnPg=="
+            
+            highlighted = code_content
+            if HAS_PYGMENTS:
+                try:
+                    lexer = get_lexer_by_name(lang) if lang != "code" else guess_lexer(code_content)
+                    formatter = HtmlFormatter(nowrap=True, style='monokai')
+                    highlighted = highlight(code_content, lexer, formatter)
+                except:
+                    import html as html_lib
+                    highlighted = html_lib.escape(code_content)
+
+            return f'''
+            <div style="margin: 15px 0;">
+                <table width="100%" style="background-color: #0d0d0d; border: 1px solid #333333; border-radius: 10px;">
+                    <tr bgcolor="#1e1e1e">
+                        <td style="padding: 6px 12px; border-top-left-radius: 10px; border-top-right-radius: 10px; text-align: right;">
+                            <a href="copy:{code_id}" style="text-decoration: none;">
+                                <img src="data:image/svg+xml;base64,{svg_icon}" width="14" height="14">
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 14px;">
+                            <pre style="margin: 0; font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 9.5pt; line-height: 1.5;">{highlighted}</pre>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            '''
+        
+        # Catch both <pre><code class="language-..."> and <pre><code>
+        html = re.sub(r'<pre><code(?: class="language-([^"]*)")?>(.*?)</code></pre>', wrap_code, html, flags=re.DOTALL)
+        
         style = """<style>
-            table { border-collapse: collapse; margin-top: 8px; margin-bottom: 8px; }
-            th, td { border: 1px solid rgba(255,255,255,0.2); padding: 6px 10px; }
-            th { background-color: rgba(255,255,255,0.1); font-weight: bold; }
-            code { background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; font-family: monospace; }
-            pre { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; }
-            h1, h2, h3 { margin-top: 12px; margin-bottom: 6px; }
+            table { border-collapse: collapse; margin-top: 8px; margin-bottom: 8px; width: 100%; }
+            th, td { border: 1px solid rgba(255,255,255,0.1); padding: 8px; text-align: left; }
+            th { background-color: rgba(255,255,255,0.05); font-weight: bold; }
+            code { 
+                background: #1a1a1a; 
+                color: #ff9d00;
+                padding: 2px 4px; 
+                border-radius: 4px; 
+                font-family: monospace; 
+            }
+            h1, h2, h3 { margin-top: 12px; margin-bottom: 6px; color: #ffffff; }
+            /* Pygments Monokai-ish overrides */
+            .k { color: #f92672; } .nf { color: #a6e22e; } .s { color: #e6db74; } .c { color: #75715e; }
+            .nb { color: #66d9ef; } .nc { color: #a6e22e; } .nn { color: #f8f8f2; } .m { color: #ae81ff; }
         </style>"""
         return style + html
     except Exception:
@@ -291,6 +356,7 @@ class MessageBubble(QFrame):
         super().__init__(parent)
         self.role = role
         self._text = ""
+        self._thought_text = ""
         self._build_ui()
 
     def _build_ui(self):
@@ -299,12 +365,29 @@ class MessageBubble(QFrame):
         outer.setContentsMargins(10, 7, 10, 7)
         outer.setSpacing(4)
 
+        self._thought_label = QLabel()
+        self._thought_label.setWordWrap(True)
+        self._thought_label.setTextFormat(Qt.TextFormat.RichText)
+        self._thought_label.setFont(QFont("Inter", 9))
+        self._thought_label.setStyleSheet("""
+            QLabel {
+                color: rgba(255, 255, 255, 0.4);
+                background: rgba(255, 255, 255, 0.03);
+                border-left: 2px solid rgba(255, 255, 255, 0.1);
+                padding: 6px 10px;
+                margin-bottom: 8px;
+            }
+        """)
+        self._thought_label.setVisible(False)
+        outer.addWidget(self._thought_label)
+
         self._label = QLabel()
         self._label.setWordWrap(True)
         self._label.setTextFormat(Qt.TextFormat.RichText)
         self._label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self._label.setFont(QFont("Inter", 10))
         self._label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self._label.linkActivated.connect(self._handle_link)
         outer.addWidget(self._label)
 
         if self.role == "user":
@@ -355,6 +438,25 @@ class MessageBubble(QFrame):
         self._text += token
         prefix = "<b>You:</b> " if self.role == "user" else ""
         self._label.setText(prefix + _md_to_html(self._text))
+
+    def append_reasoning(self, token: str):
+        self._thought_text += token
+        if not self._thought_label.isVisible():
+            self._thought_label.setVisible(True)
+        
+        # Use a nice badge style for the header
+        header = "<span style='background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.8); padding:2px 8px; border-radius:10px; font-size:8px; font-weight:bold; letter-spacing:0.5px;'>THOUGHT PROCESS</span>"
+        txt = self._thought_text.replace("\n", "<br/>")
+        self._thought_label.setText(f"{header}<br/><div style='margin-top:6px; line-height:1.4;'>{txt}</div>")
+
+    def _handle_link(self, link: str):
+        if link.startswith("copy:"):
+            code_id = link[5:]
+            if code_id in CODE_STORE:
+                clipboard = QApplication.clipboard()
+                clipboard.setText(CODE_STORE[code_id])
+                # Show a temporary indicator?
+                pass
 
     def show_export_button(self):
         if self.role == "assistant" and self._text.strip():
@@ -416,6 +518,12 @@ class ChatWidget(QWidget):
             self._update_size()
             self._scroll_to_bottom()
 
+    def append_reasoning(self, token: str):
+        if self._current_bubble:
+            self._current_bubble.append_reasoning(token)
+            self._update_size()
+            self._scroll_to_bottom()
+
     def finalize_assistant_message(self):
         if self._current_bubble:
             self._current_bubble.show_export_button()
@@ -430,6 +538,8 @@ class ChatWidget(QWidget):
         self.content_size_changed.emit(content_w, new_h)
 
     def _scroll_to_bottom(self):
-        QTimer.singleShot(30, lambda: self._scroll.verticalScrollBar().setValue(
-            self._scroll.verticalScrollBar().maximum()
-        ))
+        vbar = self._scroll.verticalScrollBar()
+        # If user is within 50px of the bottom, we consider them "at bottom" and auto-scroll
+        # This prevents snapping back if they've scrolled up to read something.
+        if vbar.value() >= vbar.maximum() - 50:
+            QTimer.singleShot(30, lambda: vbar.setValue(vbar.maximum()))

@@ -17,9 +17,11 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 
 from ui.notch_window import NotchWindow
+from utils.logger import logger
 
 
 def main():
+    logger.info("Starting Mash 2.0...")
     # Force X11 backend to allow absolute window positioning and always-on-top on Wayland
     os.environ["QT_QPA_PLATFORM"] = "xcb"
 
