@@ -137,3 +137,189 @@
 2026-05-08 11:49:52 - mash - DEBUG - OpenRouter Response Status: 200
 2026-05-08 11:50:23 - mash - DEBUG - StreamWorker finished
 2026-05-08 11:57:10 - mash - INFO - Starting Mash 2.0...
+2026-05-08 11:59:15 - mash - INFO - Starting Mash 2.0...
+2026-05-08 11:59:35 - mash - DEBUG - AgenticWorker: Planning project...
+2026-05-08 11:59:51 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 11:59:51 - mash - ERROR - AgenticWorker error
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ai/agentic_worker.py", line 101, in run
+    plan_text = re.sub(r'^```[^\n]*\n?', '', plan_text.strip())
+                                             ^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'strip'
+2026-05-08 12:03:07 - mash - INFO - Starting Mash 2.0...
+2026-05-08 12:04:02 - mash - INFO - Starting Mash 2.0...
+2026-05-08 12:04:08 - mash - DEBUG - AgenticWorker: Planning project...
+2026-05-08 12:04:24 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 12:04:24 - mash - DEBUG - AgenticWorker: Plan has 3 files
+2026-05-08 12:04:24 - mash - DEBUG - AgenticWorker: Generating index.html
+2026-05-08 12:05:15 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 12:05:15 - mash - DEBUG - AgenticWorker: Generating styles.css
+2026-05-08 12:06:00 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 12:06:00 - mash - DEBUG - AgenticWorker: Generating app.js
+2026-05-08 12:06:36 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 12:19:36 - mash - INFO - Starting Mash 2.0...
+2026-05-08 12:23:01 - mash - INFO - Starting Mash 2.0...
+2026-05-08 12:23:07 - mash - DEBUG - AgenticWorker: Planning project...
+2026-05-08 12:23:25 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 12:23:25 - mash - ERROR - AgenticWorker error
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ai/agentic_worker.py", line 115, in run
+    plan_text = self._strip_fences(plan_text)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/Documents/mash/ai/agentic_worker.py", line 100, in _strip_fences
+    text = text.strip()
+           ^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'strip'
+2026-05-08 12:25:04 - mash - INFO - Starting Mash 2.0...
+2026-05-08 12:25:16 - mash - DEBUG - AgenticWorker: Planning project...
+2026-05-08 12:25:37 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 12:25:37 - mash - DEBUG - AgenticWorker: Plan has 3 files → /home/hashir/MashProjects/flask-rest-api_20260508_122537
+2026-05-08 12:25:37 - mash - DEBUG - AgenticWorker: Generating app.py
+2026-05-08 12:25:53 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 12:25:53 - mash - DEBUG - AgenticWorker: Generating requirements.txt
+2026-05-08 12:26:09 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 12:26:09 - mash - DEBUG - AgenticWorker: Generating .gitignore
+2026-05-08 12:27:31 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 12:27:31 - mash - DEBUG - AgenticWorker: Getting suggested commands...
+2026-05-08 12:27:38 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 12:27:38 - mash - ERROR - AgenticWorker error
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ai/agentic_worker.py", line 196, in run
+    cmd_text = self._strip_fences(cmd_text)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/Documents/mash/ai/agentic_worker.py", line 100, in _strip_fences
+    text = text.strip()
+           ^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'strip'
+2026-05-08 12:29:00 - mash - DEBUG - AgenticWorker: Planning project...
+2026-05-08 12:29:21 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 12:29:21 - mash - ERROR - AgenticWorker error
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ai/agentic_worker.py", line 115, in run
+    plan_text = self._strip_fences(plan_text)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/Documents/mash/ai/agentic_worker.py", line 100, in _strip_fences
+    text = text.strip()
+           ^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'strip'
+2026-05-08 12:32:40 - mash - INFO - Starting Mash 2.0...
+2026-05-08 12:36:27 - mash - INFO - Starting Mash 2.0...
+2026-05-08 12:39:05 - mash - INFO - Starting Mash 2.0...
+2026-05-08 12:39:56 - mash - DEBUG - AgenticWorker: Planning project...
+2026-05-08 12:40:29 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 12:40:37 - mash - INFO - Starting Mash 2.0...
+2026-05-08 12:47:05 - mash - INFO - Starting Mash 2.0...
+2026-05-08 12:49:47 - mash - INFO - Starting Mash 2.0...
+2026-05-08 12:54:47 - mash - INFO - Starting Mash 2.0...
+2026-05-08 12:56:18 - mash - INFO - Starting Mash 2.0...
+2026-05-08 13:02:13 - mash - INFO - Starting Mash 2.0...
+2026-05-08 13:04:01 - mash - INFO - Starting Mash 2.0...
+2026-05-08 13:04:19 - mash - INFO - Starting Mash 2.0...
+2026-05-08 13:56:04 - mash - DEBUG - AgenticWorker: Planning project...
+2026-05-08 13:56:26 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 14:10:30 - mash - INFO - Starting Mash 2.0...
+2026-05-08 14:22:33 - mash - INFO - Starting Mash 2.0...
+2026-05-08 14:22:37 - mash - INFO - Starting Mash 2.0...
+2026-05-08 14:22:45 - mash - INFO - Starting Mash 2.0...
+2026-05-08 14:22:46 - mash - INFO - Starting Mash 2.0...
+2026-05-08 14:22:48 - mash - INFO - Starting Mash 2.0...
+2026-05-08 14:23:29 - mash - INFO - Starting Mash 2.0...
+2026-05-08 14:24:02 - mash - INFO - Starting Mash 2.0...
+2026-05-08 14:25:39 - mash - DEBUG - AgenticWorker: Planning project...
+2026-05-08 14:26:04 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 14:30:08 - mash - INFO - Starting Mash 2.0...
+2026-05-08 14:32:59 - mash - INFO - Starting Mash 2.0...
+2026-05-08 14:38:47 - mash - INFO - Starting Mash 2.0...
+2026-05-08 16:29:37 - mash - INFO - Starting Mash 2.0...
+2026-05-08 16:31:57 - mash - INFO - Starting Mash 2.0...
+2026-05-08 16:48:31 - mash - INFO - Starting Mash 2.0...
+2026-05-08 16:48:56 - mash - DEBUG - AgenticWorker: Planning project...
+2026-05-08 16:49:13 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 16:49:13 - mash - DEBUG - AgenticWorker: Plan has 2 files → /home/hashir/MashProjects/python-gui-calculator_20260508_164913
+2026-05-08 16:49:13 - mash - DEBUG - AgenticWorker: Generating main.py
+2026-05-08 16:50:41 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 16:50:41 - mash - DEBUG - AgenticWorker: Generating calculator_logic.py
+2026-05-08 16:52:07 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 16:52:07 - mash - DEBUG - AgenticWorker: Getting suggested commands...
+2026-05-08 16:52:19 - mash - DEBUG - AgenticWorker API status: 200
+2026-05-08 16:53:35 - mash - DEBUG - Starting StreamWorker with model: nvidia/nemotron-nano-12b-v2-vl:free
+2026-05-08 16:54:35 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 16:54:41 - mash - DEBUG - StreamWorker finished
+2026-05-08 16:54:45 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 16:54:48 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 16:55:01 - mash - DEBUG - StreamWorker finished
+2026-05-08 16:55:05 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 16:55:19 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 16:55:23 - mash - DEBUG - StreamWorker finished
+2026-05-08 16:55:32 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 16:55:35 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 16:55:39 - mash - DEBUG - StreamWorker finished
+2026-05-08 16:55:46 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 16:55:49 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 16:55:51 - mash - DEBUG - StreamWorker finished
+2026-05-08 16:56:37 - mash - INFO - Starting Mash 2.0...
+2026-05-08 16:57:49 - mash - DEBUG - AgenticWorker: Planning project...
+2026-05-08 16:57:58 - mash - ERROR - AgenticWorker error
+Traceback (most recent call last):
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpcore/_sync/connection.py", line 101, in handle_request
+    raise exc
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpcore/_sync/connection.py", line 78, in handle_request
+    stream = self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpcore/_sync/connection.py", line 156, in _connect
+    stream = stream.start_tls(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpcore/_backends/sync.py", line 154, in start_tls
+    with map_exceptions(exc_map):
+  File "/usr/lib/python3.12/contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [Errno 104] Connection reset by peer
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ai/agentic_worker.py", line 112, in run
+    plan_text = self._call([
+                ^^^^^^^^^^^^
+  File "/home/hashir/Documents/mash/ai/agentic_worker.py", line 92, in _call
+    resp = client.post(self.API_URL, headers=headers, json=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpx/_client.py", line 1144, in post
+    return self.request(
+           ^^^^^^^^^^^^^
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpx/_client.py", line 825, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpx/_transports/default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+  File "/usr/lib/python3.12/contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "/home/hashir/.local/lib/python3.12/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [Errno 104] Connection reset by peer
+2026-05-08 16:58:17 - mash - DEBUG - AgenticWorker: Planning project...
+2026-05-08 16:58:32 - mash - DEBUG - AgenticWorker API status: 200

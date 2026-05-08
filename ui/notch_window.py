@@ -17,7 +17,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import (
     Qt, QRect, QRectF, QTimer, QPropertyAnimation,
-    QEasingCurve, pyqtSignal, QEvent, QPoint
+    QEasingCurve, pyqtSignal, QEvent, QPoint, QThread
 )
 from PyQt6.QtGui import (
     QPainter, QColor, QPainterPath, QPen, QLinearGradient,
@@ -26,9 +26,10 @@ from PyQt6.QtGui import (
 
 from ui.character_widget import CharacterWidget
 from ui.chat_widget import ChatWidget
-from ui.input_bar import InputBar
+from ui.input_bar import InputBar, SlashMenu
 from ai.openrouter import StreamWorker
 from ai.agentic_worker import AgenticCodingWorker
+import utils.projects as project_registry
 
 from PyQt6.QtWidgets import QHBoxLayout, QPushButton
 
@@ -168,11 +169,25 @@ class FloatingPanel(QWidget):
         self.chat.content_size_changed.connect(self._on_chat_size_changed)
         
         self.mode_selector = ModeSelector()
-        
+
+        # Slash menu — embedded in panel layout, above input bar
+        self.slash_menu = SlashMenu()
+        self.slash_menu.setVisible(False)
+        self.slash_menu.setStyleSheet("""
+            QFrame {
+                background: #0d0f14;
+                border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 10px;
+            }
+        """)
+
         self.input = InputBar()
+        self.input.attach_menu(self.slash_menu)
+        self.input.slash_changed.connect(self._on_slash_query)
         
         bg_layout.addWidget(self.chat)
         bg_layout.addWidget(self.mode_selector)
+        bg_layout.addWidget(self.slash_menu)
         bg_layout.addWidget(self.input)
         layout.addWidget(self._bg)
 
@@ -192,6 +207,15 @@ class FloatingPanel(QWidget):
             self._bg.setFixedWidth(new_w)
             self.setFixedWidth(new_w)
             self.align_to_parent()
+
+    def _on_slash_query(self, text: str):
+        """Show/filter/hide the embedded slash menu."""
+        if not text:
+            self.slash_menu.setVisible(False)
+            return
+        query = text[1:] if text.startswith("/") else text  # strip leading /
+        self.slash_menu.filter(query)
+        self.slash_menu.setVisible(self.slash_menu.has_results)
 
     def align_to_parent(self):
         pr = self._parent_win.geometry()
@@ -215,6 +239,49 @@ class FloatingPanel(QWidget):
         # when anim finishes, it just stays invisible (opacity 0)
 
 
+class _CommandRunner(QThread):
+    """Runs a shell command in a background thread and emits output line-by-line."""
+    output_line = pyqtSignal(str)
+    done        = pyqtSignal(int)   # exit code
+
+    def __init__(self, cmd: str, cwd: str, parent=None):
+        super().__init__(parent)
+        self.cmd = cmd
+        self.cwd = cwd
+        self.proc: subprocess.Popen | None = None
+
+    def kill(self):
+        """Hard-kill the subprocess and its process group."""
+        import os, signal
+        if self.proc and self.proc.poll() is None:
+            try:
+                os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
+            except Exception:
+                try:
+                    self.proc.kill()
+                except Exception:
+                    pass
+
+    def run(self):
+        import shlex
+        try:
+            self.proc = subprocess.Popen(
+                shlex.split(self.cmd),
+                cwd=self.cwd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                start_new_session=True,   # gives it its own process group
+            )
+            for line in self.proc.stdout:
+                self.output_line.emit(line)
+            self.proc.wait()
+            self.done.emit(self.proc.returncode)
+        except Exception as e:
+            self.output_line.emit(f"❌ Failed: {e}\n")
+            self.done.emit(1)
+
+
 class NotchWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -230,6 +297,9 @@ class NotchWindow(QWidget):
         
         self._api_key = os.getenv("OPENROUTER_API_KEY", "")
 
+        # Auto-discover any pre-existing projects in ~/MashProjects/
+        project_registry.scan_existing()
+
         self._setup_window()
         self._load_fonts()
         self._build_ui()
@@ -239,9 +309,14 @@ class NotchWindow(QWidget):
         # Detached floating panel
         self._panel = FloatingPanel(self)
         self._panel.input.submitted.connect(self._on_submit)
+        self._panel.input.stopped.connect(self._on_stop)
+        self._panel.input.command_triggered.connect(self._on_command)
         self._panel.mode_selector.clear_btn.clicked.connect(self._clear_history)
         self._panel.mode_selector.mode_changed.connect(self._char.set_mode)
         self._panel.mode_selector.mode_changed.connect(self._on_mode_changed)
+        self._panel.mode_selector.mode_changed.connect(
+            lambda m: self._panel.input.set_coding_mode(m == "coding")
+        )
         
         self._pulse_timer = QTimer(self)
         self._pulse_timer.timeout.connect(self._tick_pulse)
@@ -377,12 +452,220 @@ class NotchWindow(QWidget):
         # Clear the injected system prompt when leaving coding mode
         self._coding_system_injected = False
 
+    def _on_stop(self):
+        """Interrupt AI generation AND kill any running project process."""
+        # Kill the tracked project run process (server/app)
+        run_runner = getattr(self, "_run_runner", None)
+        if run_runner and run_runner.isRunning():
+            run_runner.kill()
+            self._panel.chat.setVisible(True)
+            self._panel.chat.start_assistant_message()
+            self._panel.chat.append_token("⏹ Project process killed.")
+            self._panel.chat.finalize_assistant_message()
+            self._run_runner = None
+        # Abort agentic worker
+        worker = getattr(self, "_agentic_worker", None)
+        if worker and worker.isRunning():
+            worker.abort()
+        # Abort stream worker
+        sw = getattr(self, "_worker", None)
+        if sw and sw.isRunning():
+            sw.abort()
+        # Kill any other running command runners
+        for runner in getattr(self, "_cmd_runners", []):
+            if runner.isRunning():
+                runner.kill()
+        self._panel.input.set_generating(False)
+        self._panel.input.set_enabled(True)
+        self._char.set_thinking(False)
+        self._char.set_writing(False)
+        # Only append Stopped if there's an open AI bubble
+        if self._panel.chat._current_bubble:
+            self._panel.chat.append_token("\n⏹ Stopped.")
+            self._panel.chat.finalize_assistant_message()
+
+    # ── Slash command dispatcher ──────────────────────────────────────────────
+
+    def _on_command(self, cmd: str, arg: str):
+        """Route /command arg to the correct handler."""
+        handlers = {
+            "/stop":         lambda: self._on_stop(),
+            "/projects":     lambda: self._cmd_projects(),
+            "/clear":        lambda: self._clear_history(),
+            "/run":          lambda: self._cmd_run(),
+            "/requirements": lambda: self._cmd_requirements(),
+            "/switch":       lambda: self._cmd_switch(arg),
+            "/open":         lambda: self._cmd_open_vscode(),
+            "/git":          lambda: self._cmd_git(),
+            "/code":         lambda: self._cmd_code(arg),
+            "/debug":        lambda: self._cmd_debug(arg),
+            "/chat":         lambda: self._cmd_chat(arg),
+            "/explain":      lambda: self._cmd_explain(arg),
+        }
+        fn = handlers.get(cmd)
+        if fn:
+            fn()
+        else:
+            self._panel.chat.setVisible(True)
+            self._panel.chat.start_assistant_message()
+            self._panel.chat.append_token(f"⚠️ Unknown command: `{cmd}`")
+            self._panel.chat.finalize_assistant_message()
+
+    # ── Individual command handlers ───────────────────────────────────────────
+
+    def _cmd_projects(self):
+        self._panel.chat.setVisible(True)
+        all_projects = project_registry.load_all()
+        self._panel.chat.start_assistant_message()
+        if not all_projects:
+            self._panel.chat.append_token("No projects yet. Use `/code` to build one!")
+        else:
+            rows = "".join(
+                f"<tr><td><code>{p['name']}</code></td>"
+                f"<td style='color:rgba(255,255,255,0.4);font-size:9pt;'>{p.get('created','')}</td>"
+                f"<td style='color:rgba(255,255,255,0.4);font-size:9pt;'>{p.get('path','')}</td></tr>"
+                for p in all_projects
+            )
+            self._panel.chat.append_token(
+                f"<b>📁 MashProjects ({len(all_projects)}):</b>"
+                f"<table style='margin-top:6px;'>{rows}</table>"
+                f"<br/><i style='font-size:9pt;color:rgba(255,255,255,0.4);'>"
+                f"Use <code>/switch &lt;name&gt;</code> to switch project.</i>"
+            )
+        self._panel.chat.finalize_assistant_message()
+
+    def _cmd_switch(self, name: str):
+        self._panel.chat.setVisible(True)
+        if not name:
+            self._panel.chat.start_assistant_message()
+            self._panel.chat.append_token("Usage: `/switch <project name>`")
+            self._panel.chat.finalize_assistant_message()
+            return
+        found = project_registry.find(name.strip())
+        self._panel.chat.start_assistant_message()
+        if found and os.path.exists(found["path"]):
+            self._last_agentic_workspace = found["path"]
+            self._panel.chat.append_token(
+                f"✅ Switched to <b>{found['name']}</b><br/>"
+                f"<code>{found['path']}</code><br/>"
+                f"<i style='font-size:9pt;'>Use <code>/run</code>, <code>/requirements</code>, or <code>/debug</code>.</i>"
+            )
+        else:
+            self._panel.chat.append_token(f"❌ Project not found: `{name}`. Use `/projects` to list.")
+        self._panel.chat.finalize_assistant_message()
+
+    def _cmd_open_vscode(self):
+        self._panel.chat.setVisible(True)
+        ws = getattr(self, "_last_agentic_workspace", None)
+        self._panel.chat.start_assistant_message()
+        if ws and os.path.exists(ws):
+            try:
+                subprocess.Popen(["code", ws])
+                self._panel.chat.append_token(f"📂 Opened <code>{ws}</code> in VS Code.")
+            except FileNotFoundError:
+                self._panel.chat.append_token("❌ VS Code (`code`) not found in PATH.")
+        else:
+            self._panel.chat.append_token("❌ No active project. Use `/switch <name>` first.")
+        self._panel.chat.finalize_assistant_message()
+
+    def _cmd_run(self):
+        ws = getattr(self, "_last_agentic_workspace", None)
+        self._panel.chat.setVisible(True)
+        if not ws or not os.path.exists(ws):
+            self._panel.chat.start_assistant_message()
+            self._panel.chat.append_token("❌ No active project. Use `/switch <name>` first.")
+            self._panel.chat.finalize_assistant_message()
+            return
+        cmds = self._resolve_commands("run", ws)
+        if not cmds:
+            self._panel.chat.start_assistant_message()
+            self._panel.chat.append_token("⚠️ Couldn't determine how to run this project.")
+            self._panel.chat.finalize_assistant_message()
+            return
+        for cmd in cmds:
+            self._run_command_in_chat(cmd, ws, track_as_run=True)
+
+    def _cmd_requirements(self):
+        ws = getattr(self, "_last_agentic_workspace", None)
+        self._panel.chat.setVisible(True)
+        if not ws or not os.path.exists(ws):
+            self._panel.chat.start_assistant_message()
+            self._panel.chat.append_token("❌ No active project. Use `/switch <name>` first.")
+            self._panel.chat.finalize_assistant_message()
+            return
+        cmds = self._resolve_commands("install dependencies", ws)
+        if not cmds:
+            self._panel.chat.start_assistant_message()
+            self._panel.chat.append_token("⚠️ No recognised dependency files found in the project.")
+            self._panel.chat.finalize_assistant_message()
+            return
+        for cmd in cmds:
+            self._run_command_in_chat(cmd, ws)
+
+    def _cmd_git(self):
+        ws = getattr(self, "_last_agentic_workspace", None)
+        self._panel.chat.setVisible(True)
+        if not ws or not os.path.exists(ws):
+            self._panel.chat.start_assistant_message()
+            self._panel.chat.append_token("❌ No active project. Use `/switch <name>` first.")
+            self._panel.chat.finalize_assistant_message()
+            return
+        self._run_command_in_chat("git status && git diff --stat", ws)
+
+    def _cmd_code(self, prompt: str):
+        if not prompt:
+            self._panel.chat.setVisible(True)
+            self._panel.chat.start_assistant_message()
+            self._panel.chat.append_token("Usage: `/code <describe what to build>`")
+            self._panel.chat.finalize_assistant_message()
+            return
+        # Force coding mode and submit
+        self._panel.mode_selector._on_clicked("coding")
+        self._on_submit(prompt)
+
+    def _cmd_debug(self, prompt: str):
+        if not prompt:
+            self._panel.chat.setVisible(True)
+            self._panel.chat.start_assistant_message()
+            self._panel.chat.append_token("Usage: `/debug <describe the error or problem>`")
+            self._panel.chat.finalize_assistant_message()
+            return
+        ws = getattr(self, "_last_agentic_workspace", None)
+        debug_prompt = (
+            f"Debug and fix this issue in my project"
+            f"{f' at {ws}' if ws else ''}: {prompt}"
+        )
+        self._panel.mode_selector._on_clicked("coding")
+        self._on_submit(debug_prompt)
+
+    def _cmd_chat(self, msg: str):
+        if not msg:
+            self._panel.chat.setVisible(True)
+            self._panel.chat.start_assistant_message()
+            self._panel.chat.append_token("Usage: `/chat <your message>`")
+            self._panel.chat.finalize_assistant_message()
+            return
+        self._panel.mode_selector._on_clicked("general")
+        self._on_submit(msg)
+
+    def _cmd_explain(self, topic: str):
+        if not topic:
+            self._panel.chat.setVisible(True)
+            self._panel.chat.start_assistant_message()
+            self._panel.chat.append_token("Usage: `/explain <topic, concept, or paste code>`")
+            self._panel.chat.finalize_assistant_message()
+            return
+        self._panel.mode_selector._on_clicked("general")
+        self._on_submit(f"Explain this clearly and concisely: {topic}")
+
     def _on_submit(self, text: str, attachment: str = ""):
         if not self._api_key:
+            self._panel.chat.setVisible(True)
             self._panel.chat.start_assistant_message()
             self._panel.chat.append_token("⚠️  No API key found. Set OPENROUTER_API_KEY in .env")
             self._panel.chat.finalize_assistant_message()
             return
+
 
         self._panel.chat.setVisible(True)
         # If no text but attached file, show a small indicator in chat
@@ -391,6 +674,7 @@ class NotchWindow(QWidget):
         
         self._history.append({"role": "user", "content": text})
         self._panel.input.set_enabled(False)
+        self._panel.input.set_generating(True)
         self._char.set_thinking(True)
         self._panel.chat.start_assistant_message()
 
@@ -398,7 +682,112 @@ class NotchWindow(QWidget):
         model_id = StreamWorker.get_model_for_mode(mode, self._api_key)
 
         if mode == "coding":
-            # ── Agentic multi-step loop ────────────────────────────────────
+            # ── Detect special commands first ─────────────────────────────────
+            _run_keywords = ["install ", "run ", "execute ", "start ", "pip ", "npm ",
+                             "python ", "node ", "make ", "cargo ", "go run"]
+            _switch_keywords = ["continue ", "open ", "use ", "switch to ", "go to ",
+                                "work on ", "add to ", "update "]
+            _last_workspace = getattr(self, "_last_agentic_workspace", None)
+            text_lower = text.lower()
+
+            # ── Kill port (port conflict recovery) ────────────────────────────
+            if "kill port" in text_lower or "free port" in text_lower:
+                import re as _re
+                m = _re.search(r'(\d{2,5})', text_lower)
+                port = m.group(1) if m else getattr(self, "_port_conflict_port", "5000")
+                cwd  = getattr(self, "_port_conflict_cwd", _last_workspace or os.path.expanduser("~"))
+                retry = getattr(self, "_port_conflict_cmd", None)
+                self._panel.chat.finalize_assistant_message()
+                self._panel.input.set_enabled(True)
+                self._char.set_thinking(False)
+                from PyQt6.QtWidgets import QMessageBox
+                box = QMessageBox(self)
+                box.setWindowTitle("Free port")
+                box.setText(f"<b>Kill process on port {port}?</b><br/><br/>"
+                             f"<code>fuser -k {port}/tcp</code>")
+                box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+                box.setDefaultButton(QMessageBox.StandardButton.Yes)
+                if box.exec() == QMessageBox.StandardButton.Yes:
+                    self._run_command_in_chat(f"fuser -k {port}/tcp", cwd)
+                    if retry:
+                        import time; time.sleep(1.5)
+                        self._run_command_in_chat(retry, cwd)
+                        self._port_conflict_cmd = None
+                return
+
+            # ── List projects ─────────────────────────────────────────────────
+            if any(kw in text_lower for kw in ["list projects", "show projects", "my projects"]):
+                self._panel.chat.finalize_assistant_message()
+                self._panel.input.set_enabled(True)
+                self._char.set_thinking(False)
+                all_projects = project_registry.load_all()
+                if not all_projects:
+                    self._panel.chat.start_assistant_message()
+                    self._panel.chat.append_token("No projects built yet. Ask me to build something!")
+                    self._panel.chat.finalize_assistant_message()
+                else:
+                    rows = "".join(
+                        f"<tr><td><code>{p['name']}</code></td>"
+                        f"<td style='color:rgba(255,255,255,0.4);font-size:9pt;'>{p.get('created','')}</td></tr>"
+                        for p in all_projects
+                    )
+                    self._panel.chat.start_assistant_message()
+                    self._panel.chat.append_token(
+                        f"<b>📁 Your MashProjects ({len(all_projects)}):</b>"
+                        f"<table style='margin-top:6px;border-collapse:collapse;'>{rows}</table>"
+                        f"<br/><i style='font-size:9pt;color:rgba(255,255,255,0.4);'>"
+                        f"Say 'continue [name]' to switch to a project.</i>"
+                    )
+                    self._panel.chat.finalize_assistant_message()
+                return
+
+            # ── Switch project by name ────────────────────────────────────────
+            if any(kw in text_lower for kw in _switch_keywords):
+                # Strip the verb and try to find the project
+                query = text_lower
+                for kw in _switch_keywords:
+                    query = query.replace(kw, " ")
+                found = project_registry.find(query.strip())
+                if found and os.path.exists(found["path"]):
+                    self._last_agentic_workspace = found["path"]
+                    self._panel.chat.finalize_assistant_message()
+                    self._panel.input.set_enabled(True)
+                    self._char.set_thinking(False)
+                    self._panel.chat.start_assistant_message()
+                    self._panel.chat.append_token(
+                        f"✅ Switched to <b>{found['name']}</b><br/>"
+                        f"<code>{found['path']}</code><br/>"
+                        f"<i style='font-size:9pt;'>You can now run commands or ask me to add features.</i>"
+                    )
+                    self._panel.chat.finalize_assistant_message()
+                    return
+
+            # ── Run/install against current workspace ─────────────────────────
+            if _last_workspace and any(kw in text_lower for kw in _run_keywords):
+                self._panel.chat.finalize_assistant_message()
+                self._panel.input.set_enabled(True)
+                self._char.set_thinking(False)
+                from PyQt6.QtWidgets import QMessageBox
+                # Resolve natural language to real shell commands
+                resolved = self._resolve_commands(text, _last_workspace)
+                if not resolved:
+                    self._panel.chat.start_assistant_message()
+                    self._panel.chat.append_token(f"⚠️ Couldn't determine commands for: \"{text}\"")
+                    self._panel.chat.finalize_assistant_message()
+                    return
+                for cmd in resolved:
+                    box = QMessageBox(self)
+                    box.setWindowTitle("Mash wants to run a command")
+                    box.setText(f"<b>Allow Mash to run this?</b><br/><br/><code>{cmd}</code>")
+                    box.setInformativeText(f"Working directory: {_last_workspace}")
+                    box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+                    box.setDefaultButton(QMessageBox.StandardButton.Yes)
+                    box.setIcon(QMessageBox.Icon.Question)
+                    if box.exec() == QMessageBox.StandardButton.Yes:
+                        self._run_command_in_chat(cmd, _last_workspace)
+                return
+
+            # ── Agentic multi-step build loop ──────────────────────────────────
             self._coding_raw_buffer = ""
             self._coding_current_file = None
             self._coding_file_buf = ""
@@ -410,6 +799,7 @@ class NotchWindow(QWidget):
             self._panel.chat.start_assistant_message()
             self._panel.chat.append_token("🗂 Planning project structure...\n")
 
+
             self._agentic_worker = AgenticCodingWorker(
                 request=text,
                 api_key=self._api_key,
@@ -420,6 +810,7 @@ class NotchWindow(QWidget):
             self._agentic_worker.file_started.connect(self._on_file_started)
             self._agentic_worker.file_done.connect(self._on_file_done)
             self._agentic_worker.build_complete.connect(self._on_build_complete)
+            self._agentic_worker.commands_suggested.connect(self._on_commands_suggested)
             self._agentic_worker.error.connect(self._on_agentic_error)
             self._agentic_worker.finished.connect(self._on_agentic_finished)
             self._agentic_worker.start()
@@ -441,12 +832,11 @@ class NotchWindow(QWidget):
 
     # ── Agentic coding signals ────────────────────────────────────────────────
 
-    def _on_plan_ready(self, plan: list):
+    def _on_plan_ready(self, plan: list, project_name: str):
         count = len(plan)
         self._panel.chat.append_token(
-            f"✅ Plan ready — {count} file(s) to build.\n\n"
+            f"✅ Plan ready — building <b>{project_name}</b> ({count} file(s))\n\n"
         )
-        self._agentic_workspace = None  # will be set on first file_done
 
     def _on_file_started(self, filename: str):
         self._panel.chat.append_token(f"📝 Writing `{filename}`...")
@@ -463,6 +853,12 @@ class NotchWindow(QWidget):
                 pass
 
     def _on_build_complete(self, workspace: str, files: list):
+        self._last_agentic_workspace = workspace
+        # Strip timestamp suffix (e.g. flask-rest-api_20260508_122537 → flask-rest-api)
+        base = os.path.basename(workspace)
+        parts = base.rsplit("_", 2)
+        project_name = parts[0] if len(parts) == 3 else base
+        project_registry.save(project_name, workspace)
         files_list = "".join(f"<li><code>{f}</code></li>" for f in files)
         card = f"""
 <div style='margin-top:10px; line-height:1.7;'>
@@ -476,8 +872,133 @@ class NotchWindow(QWidget):
     def _on_agentic_error(self, msg: str):
         self._panel.chat.append_token(f"\n\n⚠️ Error: {msg}")
 
+    def _on_commands_suggested(self, commands: list, workspace: str):
+        """Show approval dialog for each suggested command."""
+        from PyQt6.QtWidgets import QMessageBox
+        for cmd in commands:
+            box = QMessageBox(self)
+            box.setWindowTitle("Mash wants to run a command")
+            box.setText(f"<b>Allow Mash to run this command?</b><br/><br/><code>{cmd}</code>")
+            box.setInformativeText(f"Working directory: {workspace}")
+            box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            box.setDefaultButton(QMessageBox.StandardButton.No)
+            box.setIcon(QMessageBox.Icon.Question)
+            ret = box.exec()
+            if ret == QMessageBox.StandardButton.Yes:
+                self._run_command_in_chat(cmd, workspace)
+
+    def _resolve_commands(self, text: str, workspace: str) -> list:
+        """Translate natural language intent into real shell commands based on workspace files."""
+        t = text.lower()
+        files = set(os.listdir(workspace)) if os.path.exists(workspace) else set()
+        commands = []
+
+        wants_install = any(w in t for w in ["install", "dependencies", "requirements", "setup"])
+        wants_run     = any(w in t for w in ["run", "start", "execute", "launch", "serve"])
+
+        is_python = bool(files & {"requirements.txt", "app.py", "main.py", "manage.py",
+                                   "server.py", "Pipfile"})
+
+        if wants_install:
+            if "requirements.txt" in files:
+                # Use venv to avoid Debian's externally-managed-environment error
+                venv_pip = "./venv/bin/pip"
+                commands.append("python3 -m venv venv")
+                commands.append(f"{venv_pip} install -r requirements.txt")
+            elif "package.json" in files:
+                commands.append("npm install")
+            elif "Pipfile" in files:
+                commands.append("pipenv install")
+            elif "Cargo.toml" in files:
+                commands.append("cargo build")
+            elif "pom.xml" in files:
+                commands.append("mvn install -q")
+            elif "go.mod" in files:
+                commands.append("go mod tidy")
+
+        if wants_run:
+            # Use venv's python if we just set it up, else system python3
+            py = "./venv/bin/python" if (is_python and "requirements.txt" in files) else "python3"
+            if "manage.py" in files:
+                commands.append(f"{py} manage.py runserver")
+            elif "app.py" in files:
+                commands.append(f"{py} app.py")
+            elif "main.py" in files:
+                commands.append(f"{py} main.py")
+            elif "server.py" in files:
+                commands.append(f"{py} server.py")
+            elif "index.js" in files:
+                commands.append("node index.js")
+            elif "package.json" in files:
+                commands.append("npm start")
+            elif "Cargo.toml" in files:
+                commands.append("cargo run")
+            elif "main.go" in files:
+                commands.append("go run main.go")
+            elif "Makefile" in files:
+                commands.append("make")
+
+        # Fallback: if it already looks like a real shell command, pass it through
+        if not commands:
+            first_word = t.split()[0] if t.split() else ""
+            real_bins = {"pip", "pip3", "python", "python3", "node", "npm", "npx",
+                         "cargo", "go", "make", "mvn", "java", "gcc", "g++"}
+            if first_word in real_bins:
+                commands.append(text.strip())
+
+        return commands
+
+    def _run_command_in_chat(self, cmd: str, cwd: str, track_as_run: bool = False):
+        """Run command in a background thread, stream output line-by-line to chat."""
+        self._panel.chat.setVisible(True)
+        self._panel.chat.start_assistant_message()
+        self._panel.chat.append_token(f"<code>$ {cmd}</code>\n")
+        output_buf = []
+        runner = _CommandRunner(cmd, cwd, parent=self)
+        runner.output_line.connect(self._panel.chat.append_token)
+        runner.output_line.connect(output_buf.append)
+
+        # Track long-running process (servers, etc.) so /stop can kill it
+        if track_as_run:
+            # Kill any previously tracked run process first
+            old = getattr(self, "_run_runner", None)
+            if old and old.isRunning():
+                old.kill()
+            self._run_runner = runner
+
+        def _on_done(code, _cmd=cmd, _cwd=cwd):
+            if track_as_run and getattr(self, "_run_runner", None) is runner:
+                self._run_runner = None
+            full = "".join(output_buf)
+            if code != 0 and "address already in use" in full.lower():
+                import re as _re
+                m = _re.search(r'[Pp]ort (\d+)', full)
+                port = m.group(1) if m else "5000"
+                self._panel.chat.append_token(
+                    f"\n💡 Port {port} is busy. Use <b>/stop</b> then <b>/run</b> again, "
+                    f"or say <b>'kill port {port}'</b>."
+                )
+                self._port_conflict_cmd  = _cmd
+                self._port_conflict_cwd  = _cwd
+                self._port_conflict_port = port
+            elif code == -9 or code == -15:
+                pass  # killed by /stop — no need to print exit code
+            else:
+                self._panel.chat.append_token(
+                    "\n✅ Done." if code == 0 else f"\n⚠️ Exit code {code}"
+                )
+            self._panel.chat.finalize_assistant_message()
+
+        runner.done.connect(_on_done)
+        runner.start()
+        if not hasattr(self, "_cmd_runners"):
+            self._cmd_runners = []
+        self._cmd_runners.append(runner)
+        runner.finished.connect(lambda: self._cmd_runners.remove(runner) if runner in self._cmd_runners else None)
+
     def _on_agentic_finished(self):
         self._panel.chat.finalize_assistant_message()
+        self._panel.input.set_generating(False)
         self._panel.input.set_enabled(True)
         self._char.set_thinking(False)
         self._char.set_writing(False)
@@ -594,6 +1115,7 @@ class NotchWindow(QWidget):
                 self._panel.chat.append_token(card)
 
             self._panel.chat.finalize_assistant_message()
+            self._panel.input.set_generating(False)
             self._panel.input.set_enabled(True)
             self._char.set_thinking(False)
             self._char.set_writing(False)
@@ -615,6 +1137,7 @@ class NotchWindow(QWidget):
                 if final_text:
                     self._history.append({"role": "assistant", "content": final_text})
             self._panel.chat.finalize_assistant_message()
+            self._panel.input.set_generating(False)
             self._panel.input.set_enabled(True)
             self._char.set_thinking(False)
             self._char.set_writing(False)
@@ -759,6 +1282,7 @@ class NotchWindow(QWidget):
     def _on_error(self, msg: str):
         self._panel.chat.append_token(f"\n\n⚠️  Error: {msg}")
         self._panel.chat.finalize_assistant_message()
+        self._panel.input.set_generating(False)
         self._panel.input.set_enabled(True)
         self._char.set_thinking(False)
         self._char.set_writing(False)
