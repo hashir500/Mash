@@ -133,3 +133,7 @@
 2026-05-08 11:47:40 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
 2026-05-08 11:47:46 - mash - DEBUG - OpenRouter Response Status: 200
 2026-05-08 11:47:56 - mash - DEBUG - StreamWorker finished
+2026-05-08 11:49:43 - mash - DEBUG - Starting StreamWorker with model: tencent/hy3-preview:free
+2026-05-08 11:49:52 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-08 11:50:23 - mash - DEBUG - StreamWorker finished
+2026-05-08 11:57:10 - mash - INFO - Starting Mash 2.0...

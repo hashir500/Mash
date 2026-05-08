@@ -28,6 +28,7 @@ from ui.character_widget import CharacterWidget
 from ui.chat_widget import ChatWidget
 from ui.input_bar import InputBar
 from ai.openrouter import StreamWorker
+from ai.agentic_worker import AgenticCodingWorker
 
 from PyQt6.QtWidgets import QHBoxLayout, QPushButton
 
@@ -224,6 +225,7 @@ class NotchWindow(QWidget):
         self._pulse_dir     = 1
         self._drag_pos      = QPoint()
         self._worker: StreamWorker | None = None
+        self._agentic_worker: AgenticCodingWorker | None = None
         self._history: list[dict] = []
         
         self._api_key = os.getenv("OPENROUTER_API_KEY", "")
@@ -395,24 +397,92 @@ class NotchWindow(QWidget):
         mode = self._panel.mode_selector.current_mode()
         model_id = StreamWorker.get_model_for_mode(mode, self._api_key)
 
-        # Build message list — inject system prompt for coding mode
-        messages = list(self._history)
         if mode == "coding":
-            messages = [{"role": "system", "content": self._CODING_SYSTEM_PROMPT}] + messages
-            self._coding_raw_buffer = ""  # reset buffer for this turn
+            # ── Agentic multi-step loop ────────────────────────────────────
+            self._coding_raw_buffer = ""
+            self._coding_current_file = None
+            self._coding_file_buf = ""
+            self._coding_workspace = None
+            self._coding_vscode_opened = False
+            self._coding_live_bubble_started = False
+            self._coding_files_written = []
 
-        self._worker = StreamWorker(
-            messages,
-            self._api_key, 
-            attachment_path=attachment, 
-            model_id=model_id,
-            parent=self
+            self._panel.chat.start_assistant_message()
+            self._panel.chat.append_token("🗂 Planning project structure...\n")
+
+            self._agentic_worker = AgenticCodingWorker(
+                request=text,
+                api_key=self._api_key,
+                model_id=model_id,
+                parent=self,
+            )
+            self._agentic_worker.plan_ready.connect(self._on_plan_ready)
+            self._agentic_worker.file_started.connect(self._on_file_started)
+            self._agentic_worker.file_done.connect(self._on_file_done)
+            self._agentic_worker.build_complete.connect(self._on_build_complete)
+            self._agentic_worker.error.connect(self._on_agentic_error)
+            self._agentic_worker.finished.connect(self._on_agentic_finished)
+            self._agentic_worker.start()
+        else:
+            # ── Standard streaming (General / Reasoning) ───────────────────
+            messages = list(self._history)
+            self._worker = StreamWorker(
+                messages,
+                self._api_key,
+                attachment_path=attachment,
+                model_id=model_id,
+                parent=self
+            )
+            self._worker.token_received.connect(self._on_token)
+            self._worker.reasoning_received.connect(self._on_reasoning)
+            self._worker.finished.connect(self._on_done)
+            self._worker.error.connect(self._on_error)
+            self._worker.start()
+
+    # ── Agentic coding signals ────────────────────────────────────────────────
+
+    def _on_plan_ready(self, plan: list):
+        count = len(plan)
+        self._panel.chat.append_token(
+            f"✅ Plan ready — {count} file(s) to build.\n\n"
         )
-        self._worker.token_received.connect(self._on_token)
-        self._worker.reasoning_received.connect(self._on_reasoning)
-        self._worker.finished.connect(self._on_done)
-        self._worker.error.connect(self._on_error)
-        self._worker.start()
+        self._agentic_workspace = None  # will be set on first file_done
+
+    def _on_file_started(self, filename: str):
+        self._panel.chat.append_token(f"📝 Writing `{filename}`...")
+
+    def _on_file_done(self, filename: str, filepath: str):
+        self._panel.chat.append_token(" ✅\n")
+        # Open VS Code on first file saved
+        if not getattr(self, "_agentic_vscode_opened", False):
+            workspace = os.path.dirname(filepath)
+            try:
+                subprocess.Popen(["code", workspace])
+                self._agentic_vscode_opened = True
+            except FileNotFoundError:
+                pass
+
+    def _on_build_complete(self, workspace: str, files: list):
+        files_list = "".join(f"<li><code>{f}</code></li>" for f in files)
+        card = f"""
+<div style='margin-top:10px; line-height:1.7;'>
+  <hr style='border:none;border-top:1px solid rgba(255,255,255,0.1);margin:6px 0;'/>
+  <div style='color:#60a5fa; font-weight:bold; font-size:11pt;'>⌨ Build Complete — {len(files)} file(s)</div>
+  <div style='color:rgba(255,255,255,0.5); font-size:9pt;'>{workspace}</div>
+  <ul style='margin:6px 0 0 0; padding-left:18px;'>{files_list}</ul>
+</div>"""
+        self._panel.chat.append_token(card)
+
+    def _on_agentic_error(self, msg: str):
+        self._panel.chat.append_token(f"\n\n⚠️ Error: {msg}")
+
+    def _on_agentic_finished(self):
+        self._panel.chat.finalize_assistant_message()
+        self._panel.input.set_enabled(True)
+        self._char.set_thinking(False)
+        self._char.set_writing(False)
+        self._agentic_worker = None
+        self._agentic_vscode_opened = False
 
     def _on_token(self, token: str):
         mode = self._panel.mode_selector.current_mode()
