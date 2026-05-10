@@ -29,6 +29,7 @@ from ui.chat_widget import ChatWidget
 from ui.input_bar import InputBar, SlashMenu
 from ai.openrouter import StreamWorker
 from ai.agentic_worker import AgenticCodingWorker
+from ai.nanobot_wrapper import NanobotWorker
 import utils.projects as project_registry
 
 from PyQt6.QtWidgets import QHBoxLayout, QPushButton
@@ -471,6 +472,10 @@ class NotchWindow(QWidget):
         sw = getattr(self, "_worker", None)
         if sw and sw.isRunning():
             sw.abort()
+        # Abort nanobot worker
+        nw = getattr(self, "_nanobot_worker", None)
+        if nw and nw.isRunning():
+            nw.abort()
         # Kill any other running command runners
         for runner in getattr(self, "_cmd_runners", []):
             if runner.isRunning():
@@ -787,33 +792,29 @@ class NotchWindow(QWidget):
                         self._run_command_in_chat(cmd, _last_workspace)
                 return
 
-            # ── Agentic multi-step build loop ──────────────────────────────────
-            self._coding_raw_buffer = ""
-            self._coding_current_file = None
-            self._coding_file_buf = ""
-            self._coding_workspace = None
-            self._coding_vscode_opened = False
-            self._coding_live_bubble_started = False
-            self._coding_files_written = []
-
+            # ── Nanobot build / update loop ──────────────────────────────────
             self._panel.chat.start_assistant_message()
-            self._panel.chat.append_token("🗂 Planning project structure...\n")
+            
+            workspace = getattr(self, "_last_agentic_workspace", None)
+            if workspace and os.path.exists(workspace):
+                self._panel.chat.append_token(f"🤖 **Nanobot** is updating project in `{os.path.basename(workspace)}`...\n\n")
+            else:
+                # Default workspace if none active
+                workspace = os.path.expanduser("~/MashProjects/default_project")
+                os.makedirs(workspace, exist_ok=True)
+                self._last_agentic_workspace = workspace
+                self._panel.chat.append_token(f"🤖 **Nanobot** is initializing project in `{os.path.basename(workspace)}`...\n\n")
 
-
-            self._agentic_worker = AgenticCodingWorker(
-                request=text,
+            self._nanobot_worker = NanobotWorker(
+                message=text,
+                workspace=workspace,
                 api_key=self._api_key,
                 model_id=model_id,
                 parent=self,
             )
-            self._agentic_worker.plan_ready.connect(self._on_plan_ready)
-            self._agentic_worker.file_started.connect(self._on_file_started)
-            self._agentic_worker.file_done.connect(self._on_file_done)
-            self._agentic_worker.build_complete.connect(self._on_build_complete)
-            self._agentic_worker.commands_suggested.connect(self._on_commands_suggested)
-            self._agentic_worker.error.connect(self._on_agentic_error)
-            self._agentic_worker.finished.connect(self._on_agentic_finished)
-            self._agentic_worker.start()
+            self._nanobot_worker.output_received.connect(self._panel.chat.append_token)
+            self._nanobot_worker.finished.connect(self._on_nanobot_finished)
+            self._nanobot_worker.start()
         else:
             # ── Standard streaming (General / Reasoning) ───────────────────
             messages = list(self._history)
@@ -995,6 +996,21 @@ class NotchWindow(QWidget):
             self._cmd_runners = []
         self._cmd_runners.append(runner)
         runner.finished.connect(lambda: self._cmd_runners.remove(runner) if runner in self._cmd_runners else None)
+
+    def _on_nanobot_finished(self, success: bool, last_output: str):
+        self._panel.chat.finalize_assistant_message()
+        self._panel.input.set_generating(False)
+        self._panel.input.set_enabled(True)
+        self._char.set_thinking(False)
+        self._char.set_writing(False)
+        if not success:
+            logger.error(f"Nanobot failed: {last_output}")
+            self._panel.chat.start_assistant_message()
+            self._panel.chat.append_token(f"❌ **Nanobot** error: {last_output[:200]}...")
+            self._panel.chat.finalize_assistant_message()
+        else:
+            # Refresh project list if needed
+            pass
 
     def _on_agentic_finished(self):
         self._panel.chat.finalize_assistant_message()

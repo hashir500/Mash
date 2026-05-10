@@ -1,0 +1,21 @@
+{
+  "agents": {
+    "defaults": {
+      "model": "openrouter/inclusionai/ring-2.6-1t:free",
+      "provider": "openrouter",
+      "maxToolIterations": 50,
+      "temperature": 0.1
+    }
+  },
+  "providers": {
+    "openrouter": {
+      "apiKey": null
+    }
+  },
+  "tools": {
+    "exec": {
+      "enable": true,
+      "timeout": 120
+    }
+  }
+}

@@ -16,8 +16,8 @@ class StreamWorker(QThread):
     # Default model if none provided
     DEFAULT_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
     MODES = {
-        "reasoning": "tencent/hy3-preview:free",
-        "coding": "tencent/hy3-preview:free",
+        "reasoning": "inclusionai/ring-2.6-1t:free",
+        "coding": "inclusionai/ring-2.6-1t:free",
         "general": "nvidia/nemotron-nano-12b-v2-vl:free"
     }
 
