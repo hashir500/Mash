@@ -415,3 +415,15 @@ httpx.ConnectError: [Errno 104] Connection reset by peer
 2026-05-10 12:54:27 - mash - DEBUG - Starting StreamWorker with model: nvidia/nemotron-nano-12b-v2-vl:free
 2026-05-10 12:54:32 - mash - DEBUG - OpenRouter Response Status: 200
 2026-05-10 12:54:47 - mash - DEBUG - StreamWorker finished
+2026-05-10 17:47:49 - mash - INFO - Starting Mash 2.0...
+2026-05-10 22:53:18 - mash - INFO - Starting Mash 2.0...
+2026-05-10 22:53:37 - mash - DEBUG - Starting StreamWorker with model: inclusionai/ring-2.6-1t:free
+2026-05-10 22:53:40 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-10 22:54:36 - mash - DEBUG - StreamWorker finished
+2026-05-10 22:57:40 - mash - DEBUG - Running Nanobot: nanobot agent -m enhance the visual gui and i can visit only one tab rn the home tab give me the ability to visit other tabs as well -w /home/hashir/MashProjects/mash-dashboard_20260509_115739 -c /home/hashir/Documents/mash/ai/nanobot_config.json --no-markdown in /home/hashir/MashProjects/mash-dashboard_20260509_115739
+2026-05-10 22:59:45 - mash - DEBUG - Running Nanobot: nanobot agent -m enhance the visual gui and i can visit only one tab rn the home tab give me the ability to visit other tabs as well -w /home/hashir/MashProjects/mash-dashboard_20260509_115739 -c /home/hashir/Documents/mash/ai/nanobot_config.json --no-markdown in /home/hashir/MashProjects/mash-dashboard_20260509_115739
+2026-05-11 08:53:07 - mash - INFO - Starting Mash 2.0...
+2026-05-11 09:11:33 - mash - INFO - Starting Mash 2.0...
+2026-05-11 09:13:01 - mash - DEBUG - Starting StreamWorker with model: inclusionai/ring-2.6-1t:free
+2026-05-11 09:13:07 - mash - DEBUG - OpenRouter Response Status: 200
+2026-05-11 09:13:27 - mash - DEBUG - StreamWorker finished
