@@ -13,4 +13,4 @@ __pycache__/
 # IDE and OS files (Optional but recommended)
 .vscode/
 .idea/
-.DS_Store
+.DS_Store.env
