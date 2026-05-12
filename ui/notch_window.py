@@ -62,12 +62,12 @@ class ModeSelector(QWidget):
 
         self._buttons = {}
         modes = [
-            ("✦  General",  "general",   "#a78bfa"),   # purple
-            ("⬡  Reasoning", "reasoning", "#34d399"),   # green
-            ("⌨  Coding",   "coding",    "#60a5fa"),   # blue
+            ("✦ General",   "general",   "#a78bfa", "167, 139, 250"),   # purple
+            ("⬡ Reasoning", "reasoning", "#34d399", "52, 211, 153"),   # green
+            ("⌨ Coding",    "coding",    "#60a5fa", "96, 165, 250"),   # blue
         ]
         
-        for label, mode_id, accent in modes:
+        for label, mode_id, accent, accent_rgb in modes:
             btn = QPushButton(label)
             btn.setCheckable(True)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -75,21 +75,22 @@ class ModeSelector(QWidget):
             btn.setStyleSheet(f"""
                 QPushButton {{
                     background: transparent;
-                    color: rgba(255, 255, 255, 0.38);
+                    color: rgba(255, 255, 255, 0.45);
                     border: none;
-                    border-radius: 0px;
+                    border-radius: 6px;
                     font-size: 10px;
-                    font-weight: 500;
+                    font-weight: 600;
                     font-family: 'Inter', sans-serif;
-                    padding: 0 10px;
+                    padding: 0 12px;
+                    text-transform: uppercase;
                 }}
                 QPushButton:hover {{
-                    color: rgba(255, 255, 255, 0.75);
+                    color: rgba(255, 255, 255, 0.9);
+                    background: rgba(255, 255, 255, 0.05);
                 }}
                 QPushButton:checked {{
                     color: {accent};
-                    border-bottom: 2px solid {accent};
-                    background: transparent;
+                    background: rgba({accent_rgb}, 0.12);
                 }}
             """)
             btn.clicked.connect(lambda checked, m=mode_id: self._on_clicked(m))
@@ -1333,18 +1334,21 @@ class NotchWindow(QWidget):
         path = QPainterPath()
         path.addRoundedRect(rect, corner, corner)
 
+        # Glassmorphic background with a deep vertical gradient
         bg = QLinearGradient(0, 0, 0, h)
-        bg.setColorAt(0, QColor(8, 8, 8))
-        bg.setColorAt(1, QColor(0, 0, 0))
+        bg.setColorAt(0, QColor(24, 24, 27, 230))  # Slate-900 with alpha
+        bg.setColorAt(1, QColor(9, 9, 11, 245))   # Slate-950 with alpha
         p.fillPath(path, bg)
 
-        glow_pen = QPen(QColor(255, 255, 255, int(10 + 5 * self._pulse)), 3)
-        p.setPen(glow_pen)
-        outer = QPainterPath()
-        outer.addRoundedRect(rect.adjusted(-1, -1, 1, 1), corner + 1, corner + 1)
-        p.drawPath(outer)
+        # High-end inner glow (1.2px white line at low opacity)
+        inner_glow = QPainterPath()
+        inner_glow.addRoundedRect(rect.adjusted(0.6, 0.6, -0.6, -0.6), corner, corner)
+        p.setPen(QPen(QColor(255, 255, 255, 30), 1))
+        p.drawPath(inner_glow)
 
-        border_pen = QPen(QColor(255, 255, 255, int(20 + 20 * self._pulse)), 1)
+        # Subtle pulsing accent border
+        border_alpha = int(30 + 20 * self._pulse)
+        border_pen = QPen(QColor(255, 255, 255, border_alpha), 1.0)
         p.setPen(border_pen)
         p.drawPath(path)
 
@@ -1352,10 +1356,15 @@ class NotchWindow(QWidget):
             self._paint_pill_content(p, w, h)
 
     def _paint_pill_content(self, p, w, h):
-        p.setFont(QFont("Inter", 11, QFont.Weight.Medium))
-        alpha = int(180 + 60 * self._pulse)
+        # Modern letter-spaced typography
+        font = QFont("Inter", 10, QFont.Weight.DemiBold)
+        font.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 110)
+        p.setFont(font)
+        
+        alpha = int(200 + 55 * self._pulse)
         p.setPen(QColor(255, 255, 255, alpha))
-        p.drawText(QRect(0, 0, w - 28, h), Qt.AlignmentFlag.AlignCenter, "Mash")
+        # Nudge text for optical balance
+        p.drawText(QRect(0, 1, w - 28, h), Qt.AlignmentFlag.AlignCenter, "MASH")
 
         dot_x = w - 22
         dot_y = h // 2

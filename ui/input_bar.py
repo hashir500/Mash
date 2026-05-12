@@ -85,8 +85,9 @@ class _CmdRow(QWidget):
         self._refresh()
 
     def _refresh(self):
+        # Slate-800/900 style for selected items
         self.setStyleSheet(
-            "background:#1a1f2e; border-radius:6px;" if self._sel
+            "background: rgba(255, 255, 255, 0.08); border-radius:6px;" if self._sel
             else "background:transparent; border-radius:6px;"
         )
 
@@ -215,11 +216,17 @@ class InputBar(QWidget):
         self._attach_btn.clicked.connect(self._toggle_attachment)
         self._attach_btn.setStyleSheet("""
             QPushButton {
-                background:rgba(255,255,255,0.1); border:none; border-radius:17px;
-                color:#ffffff; font-size:18px; font-weight:bold;
+                background: rgba(255, 255, 255, 0.05); 
+                border: none; 
+                border-radius: 17px;
+                color: rgba(255, 255, 255, 0.6); 
+                font-size: 18px; 
+                font-weight: 500;
             }
-            QPushButton:hover { background:rgba(255,255,255,0.2); }
-            QPushButton:pressed { background:rgba(255,255,255,0.3); }
+            QPushButton:hover { 
+                background: rgba(255, 255, 255, 0.1); 
+                color: #ffffff;
+            }
         """)
 
         self._field = _SlashLineEdit()
@@ -229,15 +236,18 @@ class InputBar(QWidget):
         self._field.textChanged.connect(self._on_text_changed)
         self._field.setStyleSheet("""
             QLineEdit {
-                background:rgba(255,255,255,0.07);
-                border:1px solid rgba(255,255,255,0.25);
-                border-radius:18px; min-height:36px; max-height:36px;
-                padding:0 16px; color:#ffffff;
-                selection-background-color:#555555;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 18px; 
+                min-height: 36px; 
+                max-height: 36px;
+                padding: 0 16px; 
+                color: #f8fafc;
+                selection-background-color: #6366f1;
             }
             QLineEdit:focus {
-                border:1px solid rgba(255,255,255,0.6);
-                background:rgba(255,255,255,0.12);
+                border: 1px solid rgba(99, 102, 241, 0.4);
+                background: rgba(255, 255, 255, 0.08);
             }
         """)
 

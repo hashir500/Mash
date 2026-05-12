@@ -145,19 +145,22 @@ class CharacterWidget(QWidget):
 
     # ── Drawing helpers ────────────────────────────────────────────────────
 
-    def _draw_glowing_pill(self, p, rect, inner=None, glow_alpha=140):
+    def _draw_glowing_pill(self, p, rect, inner=None, glow_alpha=120):
         cx, cy = rect.center().x(), rect.center().y()
-        radius = max(rect.width(), rect.height()) * 1.8
+        # More contained, premium glow
+        radius = max(rect.width(), rect.height()) * 1.5
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
         grad = QRadialGradient(cx, cy, radius)
-        grad.setColorAt(0.0, QColor(0, 100, 255, glow_alpha))
-        grad.setColorAt(0.4, QColor(0, 50, 255, 40))
+        # Using Electric Indigo for a more modern glow
+        grad.setColorAt(0.0, QColor(99, 102, 241, glow_alpha))
+        grad.setColorAt(0.5, QColor(79, 70, 229, 30))
         grad.setColorAt(1.0, QColor(0, 0, 0, 0))
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(grad)
         p.drawRect(int(cx - radius), int(cy - radius), int(radius * 2), int(radius * 2))
+        
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
-        p.setBrush(inner or QColor(230, 245, 255))
+        p.setBrush(inner or QColor(248, 250, 252)) # Slate-50
         corner_r = min(rect.width(), rect.height()) / 2.0
         p.drawRoundedRect(rect, corner_r, corner_r)
 
