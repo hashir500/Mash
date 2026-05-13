@@ -8,6 +8,8 @@ EXPANDED   : 420×216 card drops down (animation only)
 import os
 import re
 import subprocess
+import json
+import psutil
 from datetime import datetime
 from enum import Enum, auto
 
@@ -240,6 +242,29 @@ class NotchWindow(QWidget):
         )
 
         self._settings = SettingsWindow(self)
+        self._settings.branding_changed.connect(self._update_branding)
+        
+        # Load UI Config
+        self._branding_mode = "MASH"
+        self._branding_custom = "MASH"
+        self._branding_text = "MASH"
+        
+        try:
+            cfg_path = os.path.join(os.path.dirname(__file__), "..", "ai", "ui_config.json")
+            if os.path.exists(cfg_path):
+                with open(cfg_path, "r") as f:
+                    uicfg = json.load(f)
+                    self._branding_mode = uicfg.get("branding_mode", "MASH")
+                    self._branding_custom = uicfg.get("branding_text", "MASH")
+                    self._settings.combo_branding.setCurrentText(self._branding_mode)
+                    self._settings.edit_branding.setText(self._branding_custom)
+                    self._settings.edit_branding.setVisible(self._branding_mode == "Custom")
+        except Exception as e:
+            logger.error(f"Failed to load UI config: {e}")
+
+        self._vitals_timer = QTimer(self)
+        self._vitals_timer.timeout.connect(self._refresh_branding)
+        self._vitals_timer.start(1000)
         
         self._pulse_timer = QTimer(self)
         self._pulse_timer.timeout.connect(self._tick_pulse)
@@ -1285,7 +1310,7 @@ class NotchWindow(QWidget):
         alpha = int(200 + 55 * self._pulse)
         p.setPen(QColor(255, 255, 255, alpha))
         # Nudge text for optical balance
-        p.drawText(QRect(0, 1, w - 28, h), Qt.AlignmentFlag.AlignCenter, "MASH")
+        p.drawText(QRect(0, 1, w - 28, h), Qt.AlignmentFlag.AlignCenter, self._branding_text)
 
         dot_x = w - 22
         dot_y = h // 2
@@ -1363,6 +1388,43 @@ class NotchWindow(QWidget):
                 QTimer.singleShot(350, lambda: self._settings.show_animated(self.geometry().center()))
 
         super().keyPressEvent(event)
+
+    def _update_branding(self, mode, text):
+        self._branding_mode = mode
+        self._branding_custom = text
+        self._refresh_branding()
+        # Save to config
+        try:
+            cfg_path = os.path.join(os.path.dirname(__file__), "..", "ai", "ui_config.json")
+            data = {
+                "branding_mode": self._branding_mode, 
+                "branding_text": self._branding_custom,
+                "auto_collapse": True
+            }
+            with open(cfg_path, "w") as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            logger.error(f"Failed to save UI config: {e}")
+
+    def _refresh_branding(self):
+        mode = self._branding_mode
+        if mode == "MASH":
+            self._branding_text = "MASH"
+        elif mode == "Date":
+            self._branding_text = datetime.now().strftime("%b %d").upper()
+        elif mode == "Time":
+            self._branding_text = datetime.now().strftime("%I:%M %p").upper()
+        elif mode == "Memory Usage":
+            mem = psutil.virtual_memory()
+            used_gb = mem.used / (1024**3)
+            self._branding_text = f"MEM {used_gb:.1f}G"
+        elif mode == "CPU Usage":
+            cpu = psutil.cpu_percent()
+            self._branding_text = f"CPU {int(cpu)}%"
+        elif mode == "Custom":
+            self._branding_text = self._branding_custom.upper()
+        
+        self.update()
 
     def changeEvent(self, event):
         if event.type() == QEvent.Type.ActivationChange:

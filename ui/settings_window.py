@@ -1,14 +1,14 @@
-"""SettingsWindow — Premium glassmorphic settings panel for Mash."""
+"""SettingsWindow — Premium glassmorphic settings panel with sidebar navigation."""
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QLineEdit, QPushButton, QFrame, QGraphicsOpacityEffect,
-    QScrollArea, QComboBox, QTextEdit, QGraphicsDropShadowEffect
+    QScrollArea, QComboBox, QTextEdit, QStackedWidget, QCheckBox
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QPropertyAnimation, QEasingCurve, QRect, QRectF, QTimer
+from PyQt6.QtCore import Qt, pyqtSignal, QPropertyAnimation, QEasingCurve, QRect, QRectF, QTimer, QPoint
 from PyQt6.QtGui import QColor, QPainter, QLinearGradient, QPainterPath, QPen, QFont
 
 class SettingsWindow(QWidget):
-    closed = pyqtSignal()
+    branding_changed = pyqtSignal(str, str) # mode, custom_text
 
     def __init__(self, parent=None):
         super().__init__()
@@ -18,161 +18,297 @@ class SettingsWindow(QWidget):
             Qt.WindowType.Tool
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setFixedSize(500, 600)
+        self.setFixedSize(680, 580) # Wider for sidebar
         
+        self._is_hiding = False
         self._build_ui()
         self._setup_animation()
         self._drag_pos = None
 
     def _build_ui(self):
-        # Outer layout to allow for shadow/border space
-        self.main_layout = QVBoxLayout(self)
+        # Outer Layout
+        self.main_layout = QHBoxLayout(self)
         self.main_layout.setContentsMargins(10, 10, 10, 10)
 
-        # Background Container (This acts as our glass pane)
+        # Glass Container
         self.container = QFrame()
-        self.container.setObjectName("SettingsPanel")
-        # We'll use the paintEvent for the background, so make the frame transparent
         self.container.setStyleSheet("background: transparent; border: none;")
-        
-        self.container_layout = QVBoxLayout(self.container)
-        self.container_layout.setContentsMargins(30, 35, 30, 30)
-        self.container_layout.setSpacing(20)
+        self.container_layout = QHBoxLayout(self.container)
+        self.container_layout.setContentsMargins(0, 0, 0, 0)
+        self.container_layout.setSpacing(0)
 
-        # Header
+        # ── SIDEBAR ──
+        self.sidebar = QFrame()
+        self.sidebar.setFixedWidth(180)
+        self.sidebar.setStyleSheet("background: rgba(255, 255, 255, 0.02); border-right: 1px solid rgba(255, 255, 255, 0.05);")
+        self.sidebar_layout = QVBoxLayout(self.sidebar)
+        self.sidebar_layout.setContentsMargins(20, 40, 20, 20)
+        self.sidebar_layout.setSpacing(10)
+
+        # Sidebar Title
+        sb_title = QLabel("GLOBAL")
+        sb_title.setStyleSheet("color: rgba(255, 255, 255, 0.2); font-weight: 700; font-size: 9px; letter-spacing: 1.5px;")
+        self.sidebar_layout.addWidget(sb_title)
+
+        self.btn_gen = self._create_sidebar_btn("General", True)
+        self.btn_mod = self._create_sidebar_btn("Models", False)
+        
+        self.sidebar_layout.addWidget(self.btn_gen)
+        self.sidebar_layout.addWidget(self.btn_mod)
+        
+        self.sidebar_layout.addStretch()
+
+        # Footer branding in sidebar
+        sb_footer = QLabel("MASH 2.0")
+        sb_footer.setStyleSheet("color: rgba(255, 255, 255, 0.1); font-size: 9px; letter-spacing: 2px;")
+        self.sidebar_layout.addWidget(sb_footer)
+
+        self.container_layout.addWidget(self.sidebar)
+
+        # ── MAIN CONTENT AREA ──
+        self.content_area = QFrame()
+        self.content_layout = QVBoxLayout(self.content_area)
+        self.content_layout.setContentsMargins(40, 40, 40, 40)
+        self.content_layout.setSpacing(0)
+
+        # Top Bar (Header + Close)
         header_layout = QHBoxLayout()
-        header = QLabel("SETTINGS")
-        header.setFont(QFont("Inter", 11, QFont.Weight.Bold))
-        header.setStyleSheet("color: rgba(255, 255, 255, 0.5); letter-spacing: 3px;")
-        header_layout.addWidget(header)
+        self.lbl_title = QLabel("General Settings")
+        self.lbl_title.setFont(QFont("Inter", 13, QFont.Weight.Bold))
+        self.lbl_title.setStyleSheet("color: #ffffff;")
+        header_layout.addWidget(self.lbl_title)
         header_layout.addStretch()
         
         close_btn = QPushButton("✕")
         close_btn.setFixedSize(24, 24)
         close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         close_btn.clicked.connect(self.hide_animated)
-        close_btn.setStyleSheet("""
-            QPushButton {
-                color: rgba(255, 255, 255, 0.3);
-                background: transparent;
-                border: none;
-                font-size: 14px;
-            }
-            QPushButton:hover { color: #ff5555; }
-        """)
+        close_btn.setStyleSheet("color: rgba(255,255,255,0.3); background:transparent; border:none; font-size:14px;")
         header_layout.addWidget(close_btn)
-        self.container_layout.addLayout(header_layout)
+        self.content_layout.addLayout(header_layout)
+        self.content_layout.addSpacing(30)
 
-        # Settings Content (Scrollable)
-        self.scroll = QScrollArea()
-        self.scroll.setWidgetResizable(True)
-        self.scroll.setStyleSheet("background: transparent; border: none;")
-        self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        
-        content_widget = QWidget()
-        content_widget.setStyleSheet("background: transparent;")
-        content_layout = QVBoxLayout(content_widget)
-        content_layout.setContentsMargins(0, 0, 5, 0)
-        content_layout.setSpacing(28)
+        # Stacked Widget
+        self.stack = QStackedWidget()
+        self.tab_gen = self._init_general_tab()
+        self.tab_mod = self._init_models_tab()
+        self.stack.addWidget(self.tab_gen)
+        self.stack.addWidget(self.tab_mod)
+        self.content_layout.addWidget(self.stack)
 
-        # ── Section: Model ──
-        model_group = self._create_section("MODEL SELECTION", [
-            ("Provider", QComboBox(), ["OpenRouter", "Google Gemini"]),
-            ("Reasoning Model", QLineEdit("minimax/minimax-m2.5:free")),
-            ("Coding Model", QLineEdit("minimax/minimax-m2.5:free")),
-        ])
-        content_layout.addWidget(model_group)
-
-        # ── Section: Soul ──
-        soul_group = self._create_section("AGENT SOUL", [
-            ("System Instructions", QTextEdit("You are Mash, a premium minimalist AI...")),
-        ])
-        content_layout.addWidget(soul_group)
-
-        # ── Section: Keys ──
-        keys_group = self._create_section("CREDENTIALS", [
-            ("OpenRouter API Key", QLineEdit("••••••••••••••••")),
-        ])
-        content_layout.addWidget(keys_group)
-
-        content_layout.addStretch()
-        self.scroll.setWidget(content_widget)
-        self.container_layout.addWidget(self.scroll)
-
-        # Footer
+        # Bottom Bar (Save Button)
+        self.content_layout.addSpacing(20)
         self.save_btn = QPushButton("SAVE CHANGES")
         self.save_btn.setFixedHeight(44)
+        self.save_btn.setFixedWidth(160)
         self.save_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.save_btn.setStyleSheet("""
             QPushButton {
-                background: #6366f1;
-                color: white;
-                border-radius: 22px;
-                font-family: 'Inter';
-                font-weight: 700;
-                font-size: 11px;
-                letter-spacing: 1.5px;
+                background: #6366f1; color: white; border-radius: 12px;
+                font-family: 'Inter'; font-weight: 700; font-size: 10px; letter-spacing: 1px;
             }
             QPushButton:hover { background: #4f46e5; }
         """)
-        self.save_btn.clicked.connect(self.hide_animated)
-        self.container_layout.addWidget(self.save_btn)
+        self.save_btn.clicked.connect(self._save_and_close)
+        self.content_layout.addWidget(self.save_btn, alignment=Qt.AlignmentFlag.AlignRight)
 
+        self.container_layout.addWidget(self.content_area)
         self.main_layout.addWidget(self.container)
+
+        # Connect Sidebar
+        self.btn_gen.clicked.connect(lambda: self._switch_tab(0))
+        self.btn_mod.clicked.connect(lambda: self._switch_tab(1))
+
+    def _create_sidebar_btn(self, text, active):
+        btn = QPushButton(text)
+        btn.setCheckable(True)
+        btn.setChecked(active)
+        btn.setFixedHeight(36)
+        btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._update_sb_btn_style(btn, active)
+        return btn
+
+    def _update_sb_btn_style(self, btn, active):
+        if active:
+            btn.setStyleSheet("""
+                QPushButton {
+                    background: rgba(255, 255, 255, 0.08); color: #ffffff;
+                    border: none; border-radius: 8px; text-align: left;
+                    padding-left: 12px; font-size: 11px; font-weight: 600;
+                }
+            """)
+        else:
+            btn.setStyleSheet("""
+                QPushButton {
+                    background: transparent; color: rgba(255, 255, 255, 0.4);
+                    border: none; border-radius: 8px; text-align: left;
+                    padding-left: 12px; font-size: 11px;
+                }
+                QPushButton:hover { background: rgba(255, 255, 255, 0.03); color: rgba(255, 255, 255, 0.6); }
+            """)
+
+    def _switch_tab(self, index):
+        self.stack.setCurrentIndex(index)
+        self.lbl_title.setText("General Settings" if index == 0 else "Model Configuration")
+        self._update_sb_btn_style(self.btn_gen, index == 0)
+        self._update_sb_btn_style(self.btn_mod, index == 1)
+        self.btn_gen.setChecked(index == 0)
+        self.btn_mod.setChecked(index == 1)
+
+    def _init_general_tab(self):
+        area = QScrollArea()
+        area.setWidgetResizable(True)
+        area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        area.setStyleSheet("background: transparent; border: none;")
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(0, 0, 15, 0)
+        layout.setSpacing(35)
+
+        self.combo_branding = QComboBox()
+        self.combo_branding.addItems(["MASH", "Date", "Time", "Memory Usage", "CPU Usage", "Custom"])
+        self.edit_branding = QLineEdit("MASH")
+        self.edit_branding.setPlaceholderText("Enter custom text...")
+        
+        # Hide custom text unless mode is Custom
+        self.edit_branding.setVisible(False)
+        self.combo_branding.currentTextChanged.connect(
+            lambda t: self.edit_branding.setVisible(t == "Custom")
+        )
+
+        group_branding = self._create_section("NOTCH BRANDING", [
+            ("Display Mode", self.combo_branding),
+            ("Custom Text", self.edit_branding),
+        ])
+        layout.addWidget(group_branding)
+
+        self.check_collapse = QCheckBox("Automatically shrink notch when inactive")
+        self.check_collapse.setChecked(True)
+        group_behavior = self._create_section("BEHAVIOR", [
+            ("", self.check_collapse),
+        ])
+        layout.addWidget(group_behavior)
+
+        layout.addStretch()
+        area.setWidget(content)
+        return area
+
+    def _init_models_tab(self):
+        area = QScrollArea()
+        area.setWidgetResizable(True)
+        area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        area.setStyleSheet("background: transparent; border: none;")
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(0, 0, 15, 0)
+        layout.setSpacing(35)
+
+        self.edit_model_res = QLineEdit("minimax/minimax-m2.5:free")
+        self.edit_model_cod = QLineEdit("minimax/minimax-m2.5:free")
+        group_models = self._create_section("MODELS", [
+            ("Reasoning Model ID", self.edit_model_res),
+            ("Coding Model ID", self.edit_model_cod),
+        ])
+        layout.addWidget(group_models)
+
+        self.edit_soul = QTextEdit("You are Mash, a premium minimalist AI...")
+        group_soul = self._create_section("AGENT PERSONALITY", [
+            ("System Prompt", self.edit_soul),
+        ])
+        layout.addWidget(group_soul)
+
+        layout.addStretch()
+        area.setWidget(content)
+        return area
 
     def _create_section(self, title, fields):
         group = QFrame()
         layout = QVBoxLayout(group)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(14)
-
-        lbl = QLabel(title)
-        lbl.setFont(QFont("Inter", 9, QFont.Weight.DemiBold))
-        lbl.setStyleSheet("color: #6366f1; letter-spacing: 1.5px;")
-        layout.addWidget(lbl)
-
+        if title:
+            lbl = QLabel(title)
+            lbl.setStyleSheet("color: rgba(255, 255, 255, 0.2); font-weight: 700; font-size: 9px; letter-spacing: 1px;")
+            layout.addWidget(lbl)
         for item in fields:
             name, widget = item[0], item[1]
-            if isinstance(widget, QComboBox) and len(item) > 2:
-                widget.addItems(item[2])
+            if isinstance(widget, QComboBox):
+                if len(item) > 2:
+                    widget.addItems(item[2])
+                # Modernize the popup view
+                from PyQt6.QtWidgets import QListView
+                view = QListView()
+                view.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+                widget.setView(view)
             
             f_layout = QVBoxLayout()
             f_layout.setSpacing(6)
-            f_lbl = QLabel(name)
-            f_lbl.setStyleSheet("color: rgba(255, 255, 255, 0.5); font-size: 10px; font-weight: 500;")
-            f_layout.addWidget(f_lbl)
-            
+            if name:
+                f_lbl = QLabel(name)
+                f_lbl.setStyleSheet("color: rgba(255, 255, 255, 0.6); font-size: 11px; font-weight: 500;")
+                f_layout.addWidget(f_lbl)
             widget.setStyleSheet("""
-                QLineEdit, QComboBox, QTextEdit {
-                    background: rgba(255, 255, 255, 0.04);
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                    border-radius: 10px;
-                    padding: 10px 14px;
-                    color: white;
-                    font-size: 12px;
+                QLineEdit, QComboBox, QTextEdit, QCheckBox {
+                    background: rgba(255, 255, 255, 0.03);
+                    border: 1px solid rgba(255, 255, 255, 0.06);
+                    border-radius: 8px; padding: 12px;
+                    color: white; font-size: 12px;
                 }
-                QLineEdit:focus, QComboBox:focus, QTextEdit:focus {
-                    border: 1px solid rgba(99, 102, 241, 0.4);
-                    background: rgba(255, 255, 255, 0.07);
+                QComboBox {
+                    padding-right: 24px;
+                }
+                QComboBox::drop-down {
+                    border: none;
+                    width: 24px;
+                }
+                QComboBox::down-arrow {
+                    image: none;
+                    border-left: 4px solid transparent;
+                    border-right: 4px solid transparent;
+                    border-top: 4px solid rgba(255, 255, 255, 0.5);
+                    margin-right: 12px;
+                    margin-top: 2px;
+                }
+                QComboBox QAbstractItemView {
+                    background-color: #1a1a1c;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 10px;
+                    selection-background-color: rgba(99, 102, 241, 0.4);
+                    color: white;
+                    outline: none;
+                    padding: 4px;
+                }
+                QCheckBox { border: none; background: transparent; padding: 0; }
+                QLineEdit:focus, QTextEdit:focus, QComboBox:focus { 
+                    border: 1px solid rgba(99, 102, 241, 0.3); 
+                    background: rgba(255, 255, 255, 0.05); 
                 }
             """)
-            if isinstance(widget, QTextEdit):
-                widget.setFixedHeight(90)
-            
+            if isinstance(widget, QTextEdit): widget.setFixedHeight(120)
             f_layout.addWidget(widget)
             layout.addLayout(f_layout)
-
         return group
+
+    def _save_and_close(self):
+        mode = self.combo_branding.currentText()
+        text = self.edit_branding.text()
+        self.branding_changed.emit(mode, text)
+        self.hide_animated()
 
     def _setup_animation(self):
         self._fx = QGraphicsOpacityEffect(self)
         self.setGraphicsEffect(self._fx)
         self._anim = QPropertyAnimation(self._fx, b"opacity")
-        self._anim.setDuration(250)
+        self._anim.setDuration(280)
         self._anim.setEasingCurve(QEasingCurve.Type.OutQuad)
 
     def show_animated(self, pos):
-        # Center horizontally under the notch
+        self._is_hiding = False
+        try: self._anim.finished.disconnect()
+        except: pass
+        
         self.move(pos.x() - self.width() // 2, pos.y() + 40)
         self.show()
         self._anim.stop()
@@ -181,44 +317,40 @@ class SettingsWindow(QWidget):
         self._anim.start()
 
     def hide_animated(self):
+        if self._is_hiding: return
+        self._is_hiding = True
+        
         self._anim.stop()
         self._anim.setStartValue(self._fx.opacity())
         self._anim.setEndValue(0.0)
-        try:
-            self._anim.finished.disconnect()
+        try: self._anim.finished.disconnect()
         except: pass
-        self._anim.finished.connect(self.hide)
+        self._anim.finished.connect(self._on_hide_finished)
         self._anim.start()
+
+    def _on_hide_finished(self):
+        if self._is_hiding:
+            self.hide()
+            self._is_hiding = False
 
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        
-        # Match the Notch Design
         rect = QRectF(self.rect()).adjusted(10, 10, -10, -10)
-        corner = 28
         path = QPainterPath()
-        path.addRoundedRect(rect, corner, corner)
-        
-        # 1. Deep Shadow
+        path.addRoundedRect(rect, 20, 20)
         p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(QColor(0, 0, 0, 80))
-        p.drawPath(path.translated(0, 6))
-
-        # 2. Main Linear Gradient (Match Notch)
+        p.setBrush(QColor(0, 0, 0, 100))
+        p.drawPath(path.translated(0, 8))
         bg = QLinearGradient(0, 0, 0, self.height())
-        bg.setColorAt(0, QColor(24, 24, 27, 245))  # Slate-900
-        bg.setColorAt(1, QColor(9, 9, 11, 252))   # Slate-950
+        bg.setColorAt(0, QColor(24, 24, 27, 248))
+        bg.setColorAt(1, QColor(9, 9, 11, 255))
         p.fillPath(path, bg)
-
-        # 3. 1px Inner Glow (Premium Hardware Look)
         inner_glow = QPainterPath()
-        inner_glow.addRoundedRect(rect.adjusted(0.8, 0.8, -0.8, -0.8), corner, corner)
-        p.setPen(QPen(QColor(255, 255, 255, 35), 1))
+        inner_glow.addRoundedRect(rect.adjusted(0.8, 0.8, -0.8, -0.8), 20, 20)
+        p.setPen(QPen(QColor(255, 255, 255, 30), 1))
         p.drawPath(inner_glow)
-
-        # 4. Subtle Outer Border
-        p.setPen(QPen(QColor(255, 255, 255, 15), 1.0))
+        p.setPen(QPen(QColor(255, 255, 255, 12), 1.0))
         p.drawPath(path)
 
     def mousePressEvent(self, event):
