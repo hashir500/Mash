@@ -27,6 +27,7 @@ from PyQt6.QtGui import (
 from ui.character_widget import CharacterWidget
 from ui.chat_widget import ChatWidget
 from ui.input_bar import InputBar, SlashMenu
+from ui.settings_window import SettingsWindow
 from ai.openrouter import StreamWorker
 from ai.agentic_worker import AgenticCodingWorker
 from ai.nanobot_wrapper import NanobotWorker
@@ -237,6 +238,8 @@ class NotchWindow(QWidget):
         self._panel.input.mode_dropdown.mode_changed.connect(
             lambda m: self._panel.input.set_coding_mode(m == "coding")
         )
+
+        self._settings = SettingsWindow(self)
         
         self._pulse_timer = QTimer(self)
         self._pulse_timer.timeout.connect(self._tick_pulse)
@@ -1335,8 +1338,30 @@ class NotchWindow(QWidget):
         super().leaveEvent(event)
 
     def keyPressEvent(self, event):
+        # Escape to collapse
         if event.key() == Qt.Key.Key_Escape and self._state == State.EXPANDED:
-            self.collapse()
+            if self._settings.isVisible():
+                self._settings.hide_animated()
+            else:
+                self.collapse()
+        
+        # Ctrl + Space for Settings (only in Expanded view)
+        elif (event.key() == Qt.Key.Key_Space and 
+              event.modifiers() & Qt.KeyboardModifier.ControlModifier and 
+              self._state == State.EXPANDED):
+            if self._settings.isVisible():
+                self._settings.hide_animated()
+            else:
+                # 1. Hide input panel if visible
+                if self._panel.isVisible():
+                    self._panel.hide()
+                
+                # 2. Collapse the notch to pill
+                self.collapse()
+                
+                # 3. Show settings below the pill after collapse animation
+                QTimer.singleShot(350, lambda: self._settings.show_animated(self.geometry().center()))
+
         super().keyPressEvent(event)
 
     def changeEvent(self, event):
