@@ -22,6 +22,7 @@ class SettingsWindow(QWidget):
         
         self._build_ui()
         self._setup_animation()
+        self._drag_pos = None
 
     def _build_ui(self):
         # Outer layout to allow for shadow/border space
@@ -219,3 +220,13 @@ class SettingsWindow(QWidget):
         # 4. Subtle Outer Border
         p.setPen(QPen(QColor(255, 255, 255, 15), 1.0))
         p.drawPath(path)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            event.accept()
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == Qt.MouseButton.LeftButton and self._drag_pos:
+            self.move(event.globalPosition().toPoint() - self._drag_pos)
+            event.accept()
