@@ -1,10 +1,11 @@
 """InputBar — text input with slash-command autocomplete."""
 from PyQt6.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QLineEdit,
-    QPushButton, QFileDialog, QLabel, QFrame,
+    QPushButton, QFileDialog, QLabel, QFrame, QMenu,
+    QGraphicsOpacityEffect,
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QTimer
-from PyQt6.QtGui import QFont, QKeyEvent
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QTimer, QPropertyAnimation, QEasingCurve
+from PyQt6.QtGui import QFont, QKeyEvent, QAction
 import os
 
 # ── Slash command registry ────────────────────────────────────────────────────
@@ -101,51 +102,42 @@ class SlashMenu(QFrame):
     command_selected = pyqtSignal(str)
 
     def __init__(self, parent=None):
-        super().__init__(
-            parent,
-            Qt.WindowType.Tool
-            | Qt.WindowType.FramelessWindowHint
-            | Qt.WindowType.WindowStaysOnTopHint,
-        )
-        # Solid dark card matching Mash panel colour
-        self.setStyleSheet("""
-            QFrame {
-                background: #0a0a0a;
-                border: 1px solid rgba(255,255,255,0.10);
-                border-radius: 12px;
-            }
-        """)
-        self._vbox = QVBoxLayout(self)
-        self._vbox.setContentsMargins(5, 5, 5, 5)
-        self._vbox.setSpacing(1)
-        self._rows: list[_CmdRow] = []
-        self._cursor = 0
-        self._populate(SLASH_COMMANDS)
-
-    def _populate(self, cmds):
-        for r in self._rows:
-            self._vbox.removeWidget(r)
-            r.deleteLater()
+        super().__init__(parent)
+        self.setFixedWidth(400)
+        self.setFixedHeight(260)
         self._rows = []
-        for name, desc, arg in cmds:
+        self._cursor = 0
+
+        self._layout = QVBoxLayout(self)
+        self._layout.setContentsMargins(6, 6, 6, 6)
+        self._layout.setSpacing(2)
+
+    def update_results(self, query: str):
+        # Clear
+        for r in self._rows:
+            self._layout.removeWidget(r)
+            r.deleteLater()
+        self._rows.clear()
+
+        # Filter
+        q = query.lower()
+        matches = [c for c in SLASH_COMMANDS if c[0].startswith(q)]
+        
+        for name, desc, arg in matches:
             row = _CmdRow(name, desc, arg)
-            row.clicked.connect(self.command_selected)
-            self._vbox.addWidget(row)
+            row.clicked.connect(self.command_selected.emit)
+            self._layout.addWidget(row)
             self._rows.append(row)
+
         self._cursor = 0
         if self._rows:
             self._rows[0].set_selected(True)
-        self.adjustSize()
+            self.show()
+        else:
+            self.hide()
 
-    def filter(self, query: str):
-        q = query.lower()
-        filtered = [c for c in SLASH_COMMANDS
-                    if not q or q in c[0] or q in c[1].lower()]
-        self._populate(filtered)
-
-    def move_cursor(self, delta: int):
-        if not self._rows:
-            return
+    def move_cursor(self, delta):
+        if not self._rows: return
         self._rows[self._cursor].set_selected(False)
         self._cursor = (self._cursor + delta) % len(self._rows)
         self._rows[self._cursor].set_selected(True)
@@ -160,6 +152,106 @@ class SlashMenu(QFrame):
     @property
     def has_results(self):
         return bool(self._rows)
+
+
+# ── Components ────────────────────────────────────────────────────────────
+
+class AnimatedMenu(QMenu):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowFlags(
+            self.windowFlags() 
+            | Qt.WindowType.FramelessWindowHint 
+            | Qt.WindowType.NoDropShadowWindowHint
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        
+        self._fx = QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(self._fx)
+        
+        self._anim = QPropertyAnimation(self._fx, b"opacity")
+        self._anim.setDuration(220)
+        self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+    def showEvent(self, event):
+        self._anim.setStartValue(0.0)
+        self._anim.setEndValue(1.0)
+        self._anim.start()
+        super().showEvent(event)
+
+
+class ModeDropdown(QPushButton):
+    mode_changed = pyqtSignal(str)
+
+    def __init__(self, parent=None):
+        super().__init__("✦", parent)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFixedSize(30, 30)
+        self.setStyleSheet("""
+            QPushButton {
+                background: transparent;
+                color: rgba(255, 255, 255, 0.45);
+                border: none;
+                border-radius: 15px;
+                font-size: 18px;
+            }
+            QPushButton:hover {
+                background: rgba(255, 255, 255, 0.08);
+                color: rgba(255, 255, 255, 0.95);
+            }
+        """)
+        
+        self._menu = AnimatedMenu(self)
+        self._menu.setStyleSheet("""
+            QMenu {
+                background-color: rgba(18, 18, 20, 240);
+                border: 1px solid rgba(255, 255, 255, 0.12);
+                border-radius: 16px;
+                padding: 6px;
+            }
+            QMenu::item {
+                padding: 10px 36px 10px 16px;
+                color: rgba(255, 255, 255, 0.6);
+                border-radius: 10px;
+                font-family: 'Inter', sans-serif;
+                font-size: 12px;
+                margin: 2px 4px;
+            }
+            QMenu::item:selected {
+                background-color: rgba(255, 255, 255, 0.08);
+                color: #ffffff;
+            }
+        """)
+
+        self._modes = {
+            "general":   "General",
+            "reasoning": "Reasoning",
+            "coding":    "Coding"
+        }
+
+        for mid, label in self._modes.items():
+            action = QAction(label, self)
+            action.triggered.connect(lambda checked, m=mid: self._on_triggered(m))
+            self._menu.addAction(action)
+
+        self.clicked.connect(self._show_menu)
+        self._current_mode = "general"
+
+    def _show_menu(self):
+        # Position with 25px vertical offset and optical right alignment
+        menu_w = self._menu.sizeHint().width()
+        pos = self.mapToGlobal(QPoint(self.width() - menu_w + 4, self.height() + 25))
+        self._menu.exec(pos)
+
+    def _on_triggered(self, mode_id):
+        self.set_current_mode(mode_id)
+        self.mode_changed.emit(mode_id)
+
+    def set_current_mode(self, mode_id):
+        if mode_id in self._modes:
+            self._current_mode = mode_id
+            # Keep as minimalist icon ✦
+            pass
 
 
 # ── InputBar ──────────────────────────────────────────────────────────────────
@@ -195,13 +287,17 @@ class InputBar(QWidget):
         self._ext_menu: SlashMenu | None = None   # set by FloatingPanel
         self._build_ui()
 
-    def attach_menu(self, menu: 'SlashMenu'):
+    def attach_menu(self, menu: SlashMenu):
         """Wire an externally-owned SlashMenu (lives in panel layout)."""
         self._ext_menu = menu
         self._field.key_up.connect(lambda: menu.move_cursor(-1))
         self._field.key_down.connect(lambda: menu.move_cursor(1))
         self._field.key_escape.connect(menu.hide)
         menu.command_selected.connect(self._on_cmd_selected)
+
+    def set_mode(self, mode_id: str):
+        """External sync for the internal mode dropdown."""
+        self.mode_dropdown.set_current_mode(mode_id)
 
     # ── Build ─────────────────────────────────────────────────────────────────
 
@@ -257,8 +353,11 @@ class InputBar(QWidget):
         self._btn.clicked.connect(self._send)
         self._btn.setStyleSheet(_BTN_SEND)
 
+        self.mode_dropdown = ModeDropdown()
+
         layout.addWidget(self._attach_btn)
         layout.addWidget(self._field)
+        layout.addWidget(self.mode_dropdown)
         layout.addWidget(self._btn)
 
     # ── Slash menu logic ──────────────────────────────────────────────────────

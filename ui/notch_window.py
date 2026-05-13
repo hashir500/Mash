@@ -50,85 +50,7 @@ class State(Enum):
     EXPANDED  = auto()
 
 
-class ModeSelector(QWidget):
-    mode_changed = pyqtSignal(str)
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setStyleSheet("background: transparent; border: none;")
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(10, 0, 10, 5)
-        layout.setSpacing(8)
-
-        self._buttons = {}
-        modes = [
-            ("✦ General",   "general",   "#a78bfa", "167, 139, 250"),   # purple
-            ("⬡ Reasoning", "reasoning", "#34d399", "52, 211, 153"),   # green
-            ("⌨ Coding",    "coding",    "#60a5fa", "96, 165, 250"),   # blue
-        ]
-        
-        for label, mode_id, accent, accent_rgb in modes:
-            btn = QPushButton(label)
-            btn.setCheckable(True)
-            btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.setFixedHeight(28)
-            btn.setStyleSheet(f"""
-                QPushButton {{
-                    background: transparent;
-                    color: rgba(255, 255, 255, 0.45);
-                    border: none;
-                    border-radius: 6px;
-                    font-size: 10px;
-                    font-weight: 600;
-                    font-family: 'Inter', sans-serif;
-                    padding: 0 12px;
-                    text-transform: uppercase;
-                }}
-                QPushButton:hover {{
-                    color: rgba(255, 255, 255, 0.9);
-                    background: rgba(255, 255, 255, 0.05);
-                }}
-                QPushButton:checked {{
-                    color: {accent};
-                    background: rgba({accent_rgb}, 0.12);
-                }}
-            """)
-            btn.clicked.connect(lambda checked, m=mode_id: self._on_clicked(m))
-            layout.addWidget(btn)
-            self._buttons[mode_id] = btn
-
-        self._current_mode = "general"
-        self._buttons["general"].setChecked(True)
-        layout.addStretch()
-
-        # Small cross icon clear button
-        self.clear_btn = QPushButton("✕")
-        self.clear_btn.setFixedSize(22, 22)
-        self.clear_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.clear_btn.setToolTip("Clear conversation")
-        self.clear_btn.setStyleSheet("""
-            QPushButton {
-                background: transparent;
-                color: rgba(255, 255, 255, 0.22);
-                border: none;
-                border-radius: 11px;
-                font-size: 11px;
-            }
-            QPushButton:hover {
-                background: rgba(255, 80, 80, 0.18);
-                color: rgba(255, 100, 100, 0.9);
-            }
-        """)
-        layout.addWidget(self.clear_btn)
-
-    def _on_clicked(self, mode_id):
-        self._current_mode = mode_id
-        for mid, btn in self._buttons.items():
-            btn.setChecked(mid == mode_id)
-        self.mode_changed.emit(mode_id)
-
-    def current_mode(self):
-        return self._current_mode
 
 
 class FloatingPanel(QWidget):
@@ -169,8 +91,6 @@ class FloatingPanel(QWidget):
         self.chat.setStyleSheet("QWidget { border: none; background: transparent; }")
         self.chat.setVisible(False)
         self.chat.content_size_changed.connect(self._on_chat_size_changed)
-        
-        self.mode_selector = ModeSelector()
 
         # Slash menu — embedded in panel layout, above input bar
         self.slash_menu = SlashMenu()
@@ -188,7 +108,6 @@ class FloatingPanel(QWidget):
         self.input.slash_changed.connect(self._on_slash_query)
         
         bg_layout.addWidget(self.chat)
-        bg_layout.addWidget(self.mode_selector)
         bg_layout.addWidget(self.slash_menu)
         bg_layout.addWidget(self.input)
         layout.addWidget(self._bg)
@@ -313,10 +232,9 @@ class NotchWindow(QWidget):
         self._panel.input.submitted.connect(self._on_submit)
         self._panel.input.stopped.connect(self._on_stop)
         self._panel.input.command_triggered.connect(self._on_command)
-        self._panel.mode_selector.clear_btn.clicked.connect(self._clear_history)
-        self._panel.mode_selector.mode_changed.connect(self._char.set_mode)
-        self._panel.mode_selector.mode_changed.connect(self._on_mode_changed)
-        self._panel.mode_selector.mode_changed.connect(
+        self._panel.input.mode_dropdown.mode_changed.connect(self._char.set_mode)
+        self._panel.input.mode_dropdown.mode_changed.connect(self._on_mode_changed)
+        self._panel.input.mode_dropdown.mode_changed.connect(
             lambda m: self._panel.input.set_coding_mode(m == "coding")
         )
         
