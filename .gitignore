@@ -4,6 +4,13 @@ venv/
 # Environment Variables / Secrets
 .env
 
+# Runtime config (contains API keys — never commit)
+ai/ui_config.json
+
+# Log files
+mash.log
+*.log
+
 # Python Cache (Standard omissions)
 __pycache__/
 *.pyc

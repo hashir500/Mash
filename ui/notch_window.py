@@ -226,6 +226,8 @@ class NotchWindow(QWidget):
         self._model_general = "minimax/minimax-m2.5:free"
         self._model_reasoning = "minimax/minimax-m2.5:free"
         self._model_coding = "minimax/minimax-m2.5:free"
+        self._theme = "dark"
+        self._char_anim = "orb"
 
         # Auto-discover any pre-existing projects in ~/MashProjects/
         project_registry.scan_existing()
@@ -257,6 +259,8 @@ class NotchWindow(QWidget):
         self._settings.spotify_toggled.connect(self._update_spotify_enabled)
         self._settings.lock_notch_toggled.connect(self._update_notch_lock)
         self._settings.config_updated.connect(self._update_ai_config)
+        self._settings.theme_changed.connect(self._apply_theme)
+        self._settings.char_anim_changed.connect(self._update_char_anim)
         
         # Load UI Config
         self._branding_mode = "MASH"
@@ -304,6 +308,8 @@ class NotchWindow(QWidget):
                     self._model_general = uicfg.get("model_general", self._model_general)
                     self._model_reasoning = uicfg.get("model_reasoning", self._model_reasoning)
                     self._model_coding = uicfg.get("model_coding", self._model_coding)
+                    self._theme = uicfg.get("theme", "dark")
+                    self._char_anim = uicfg.get("char_anim", "orb")
                     if "api_key" in uicfg and uicfg["api_key"]:
                         self._api_key = uicfg["api_key"]
                     
@@ -311,6 +317,13 @@ class NotchWindow(QWidget):
                     self._set_button_model(self._settings.btn_model_gen, self._model_general)
                     self._set_button_model(self._settings.btn_model_res, self._model_reasoning)
                     self._set_button_model(self._settings.btn_model_cod, self._model_coding)
+                    # Restore customization UI state
+                    self._settings._selected_theme = self._theme
+                    self._settings._refresh_theme_btns()
+                    self._settings._selected_char_anim = self._char_anim
+                    self._settings._refresh_anim_btns()
+                    self._apply_theme(self._theme)
+                    self._char.set_idle_anim(self._char_anim)
                     
                     self._settings.btn_branding_mode.setText(self._branding_mode)
                     self._settings.btn_branding_anim.setText(self._anim_mode)
@@ -1322,6 +1335,60 @@ class NotchWindow(QWidget):
         self._model_coding = config_data.get("model_coding", self._model_coding)
         self._save_ui_config()
 
+    def _update_char_anim(self, anim: str):
+        self._char_anim = anim
+        self._char.set_idle_anim(anim)
+        self._save_ui_config()
+
+    def _apply_theme(self, theme: str):
+        self._theme = theme
+        THEMES = {
+            "dark": {
+                "bg":      "rgba(15, 15, 20, 230)",
+                "border":  "rgba(255, 255, 255, 0.08)",
+                "text":    "#f8fafc",
+                "accent":  "#6366f1",
+                "input_bg": "rgba(255, 255, 255, 0.04)",
+            },
+            "light": {
+                "bg":      "rgba(245, 245, 250, 240)",
+                "border":  "rgba(0, 0, 0, 0.10)",
+                "text":    "#111111",
+                "accent":  "#6366f1",
+                "input_bg": "rgba(0, 0, 0, 0.05)",
+            },
+            "neon": {
+                "bg":      "rgba(10, 5, 25, 240)",
+                "border":  "rgba(0, 255, 136, 0.12)",
+                "text":    "#e0ffe8",
+                "accent":  "#00ff88",
+                "input_bg": "rgba(0, 255, 136, 0.04)",
+            },
+        }
+        t = THEMES.get(theme, THEMES["dark"])
+        qss = f"""
+            QWidget#floatingPanel, QWidget#floatingPanel * {{
+                background: transparent;
+                color: {t['text']};
+            }}
+            QFrame#chatFrame, QFrame#inputFrame {{
+                background: {t['bg']};
+                border: 1px solid {t['border']};
+                border-radius: 18px;
+            }}
+            QLineEdit, QTextEdit {{
+                background: {t['input_bg']};
+                border: 1px solid {t['border']};
+                border-radius: 10px;
+                color: {t['text']};
+                padding: 8px 14px;
+            }}
+            QScrollBar:vertical {{ background: transparent; width: 4px; }}
+            QScrollBar::handle:vertical {{ background: {t['accent']}; border-radius: 2px; }}
+        """
+        self._panel.setStyleSheet(qss)
+        self._save_ui_config()
+
     def _set_button_model(self, btn, value):
         btn.model_id = value
         text = getattr(self._settings, "models_dict", {}).get(value, value)
@@ -1342,7 +1409,9 @@ class NotchWindow(QWidget):
                 "api_key": self._api_key,
                 "model_general": self._model_general,
                 "model_reasoning": self._model_reasoning,
-                "model_coding": self._model_coding
+                "model_coding": self._model_coding,
+                "theme": self._theme,
+                "char_anim": self._char_anim
             }
             with open(cfg_path, "w") as f: json.dump(data, f, indent=2)
         except Exception as e: logger.error(f"Failed to save UI config: {e}")
