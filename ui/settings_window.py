@@ -62,7 +62,8 @@ class SettingsWindow(QWidget):
 
         # Sidebar Title
         sb_title = QLabel("GLOBAL")
-        sb_title.setStyleSheet("color: rgba(255, 255, 255, 0.2); font-weight: 700; font-size: 9px; letter-spacing: 1.5px;")
+        sb_title.setObjectName("sidebarHeader")
+        sb_title.setStyleSheet("font-weight: 700; font-size: 9px; letter-spacing: 1.5px;")
         self.sidebar_layout.addWidget(sb_title)
 
         self.btn_gen = self._create_sidebar_btn("General", True)
@@ -77,7 +78,8 @@ class SettingsWindow(QWidget):
 
         # Footer branding in sidebar
         sb_footer = QLabel("MASH 2.0")
-        sb_footer.setStyleSheet("color: rgba(255, 255, 255, 0.1); font-size: 9px; letter-spacing: 2px;")
+        sb_footer.setObjectName("sidebarFooter")
+        sb_footer.setStyleSheet("font-size: 9px; letter-spacing: 2px;")
         self.sidebar_layout.addWidget(sb_footer)
 
         self.container_layout.addWidget(self.sidebar)
@@ -684,7 +686,10 @@ class SettingsWindow(QWidget):
                 border-top-left-radius: 20px;
                 border-bottom-left-radius: 20px;
             }}
-            QLabel {{ color: {t['text']}; }}
+            QLabel, QPushButton {{ color: {t['text']} !important; }}
+            QLabel#sidebarHeader {{ color: {t['subtext']} !important; }}
+            QLabel#sidebarFooter {{ color: {t['subtext']} !important; opacity: 0.5; }}
+            QLabel {{ font-size: 10px; }}
         """)
         
         # Update stack and its children
