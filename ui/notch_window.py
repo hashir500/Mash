@@ -12,6 +12,7 @@ import json
 import psutil
 from datetime import datetime
 from enum import Enum, auto
+import random
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QApplication,
@@ -318,6 +319,12 @@ class NotchWindow(QWidget):
                     self._settings._refresh_anim_btns()
                     self._apply_theme(self._theme)
                     self._char.set_idle_anim(self._char_anim)
+                    
+                    # F1 Animation State
+                    self._f1_time = 0.0
+                    self._f1_cars = [
+                        {"name": "Ferrari", "color": QColor("#E10600"), "accent": QColor("#FFFFFF"), "pos": 0.0, "speed": 0.015},
+                    ]
                     
                     self._settings.btn_branding_mode.setText(self._branding_mode)
                     self._settings.btn_branding_anim.setText(self._anim_mode)
@@ -997,6 +1004,8 @@ class NotchWindow(QWidget):
             self._draw_chrome_dino(p, w, h)
         elif self._anim_mode == "Car Drive":
             self._draw_car_drive(p, w, h)
+        elif self._anim_mode == "F1":
+            self._draw_f1(p, w, h)
         dot_x = w - 22
         dot_y = h // 2
         dot_r = 5 + self._pulse * 2.5
@@ -1107,6 +1116,122 @@ class NotchWindow(QWidget):
                 self._car_bounce = 0.0
                 self._car_bounce_dir = 1
             self.update()
+        elif self._anim_mode == "F1":
+            self._f1_time += 0.01
+            for car in self._f1_cars:
+                car["pos"] += car["speed"]
+                if car["pos"] > 1.0:
+                    car["pos"] = -0.1 # Wrap around
+                    car["speed"] = 0.01 + (random.random() * 0.005) # Randomize speed slightly
+            self.update()
+
+    def _draw_f1(self, p, w, h):
+        p.save()
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Clipping to pill
+        clip = QPainterPath()
+        clip.addRoundedRect(QRectF(0, 0, w, h), CORNER_PILL, CORNER_PILL)
+        p.setClipPath(clip)
+        
+        # Speed lines in background
+        p.setPen(QPen(QColor(255, 255, 255, 15), 1))
+        for i in range(8):
+            lx = (i * 40 - (self._f1_time * 800)) % (w + 40) - 20
+            ly = h // 2 + (i % 3) * 4 - 8
+            p.drawLine(QPointF(lx, ly), QPointF(lx + 15, ly))
+
+        # Racing Curb (Red/White moving)
+        curb_y = h - 5
+        curb_step = 16
+        offset = (self._f1_time * 600) % (curb_step * 2)
+        for x in range(-curb_step * 2, int(w) + curb_step, curb_step):
+            color = QColor(220, 30, 30, 180) if (x // curb_step) % 2 == 0 else QColor(240, 240, 240, 180)
+            p.fillRect(QRectF(x - offset, curb_y, curb_step, 3), color)
+
+        # Track line
+        p.setPen(QPen(QColor(100, 100, 100, 80), 1))
+        p.drawLine(0, h - 5, w, h - 5)
+        
+        # Draw cars
+        for car in self._f1_cars:
+            # Map pos 0-1 to screen width with overflow
+            cx = car["pos"] * (w + 100) - 50 # Wider range for larger car
+            cy = h - 8 + (random.random() * 0.5) 
+            
+            p.save()
+            p.translate(cx, cy)
+            p.scale(2.5, 2.5) # Much larger for visibility
+            
+            # Side view F1 car
+            # Rear Wheel
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QColor(15, 15, 15))
+            p.drawEllipse(QRectF(-8, -8, 7, 7))
+            p.setBrush(QColor(40, 40, 40))
+            p.drawEllipse(QRectF(-6, -6, 3, 3))
+            
+            # Front Wheel
+            p.setBrush(QColor(15, 15, 15))
+            p.drawEllipse(QRectF(3, -6, 5, 5))
+            p.setBrush(QColor(40, 40, 40))
+            p.drawEllipse(QRectF(4.5, -4.5, 2, 2))
+            
+            # Body
+            p.setBrush(car["color"])
+            body = QPainterPath()
+            body.moveTo(-9, -4)
+            body.lineTo(-4, -4)
+            body.lineTo(7, -3)
+            body.lineTo(9, -2)
+            body.lineTo(8, -4)
+            body.lineTo(3, -5)
+            body.lineTo(1, -7.5) # Higher airbox
+            body.lineTo(-1, -7.5)
+            body.lineTo(-4, -7)
+            body.lineTo(-7, -4)
+            body.closeSubpath()
+            p.drawPath(body)
+            
+            # Livery/Accent details
+            p.setBrush(car["accent"])
+            p.drawRect(QRectF(-2, -5, 4, 1.5)) # Sidepod area
+            if car["name"] == "Red Bull":
+                p.setBrush(QColor("#FF0000"))
+                p.drawEllipse(QRectF(-1, -6, 2, 2)) # Red Bull logo dot
+            elif car["name"] == "Mercedes":
+                p.setBrush(QColor("#00D2BE"))
+                p.drawRect(QRectF(4, -4, 3, 0.5)) # Petronas teal line
+            
+            # Rear Wing
+            p.setBrush(car["color"])
+            p.drawRect(QRectF(-10, -8.5, 4, 1.2))
+            p.setBrush(QColor(10, 10, 10))
+            p.drawRect(QRectF(-9, -7.5, 0.8, 3.5))
+            
+            # Front Wing
+            p.setBrush(car["color"])
+            p.drawRect(QRectF(7, -3.2, 4.5, 1))
+            
+            # Driver Helmet (Team Specific)
+            h_color = QColor(255, 255, 0) if car["name"] == "McLaren" else QColor(255, 255, 255)
+            p.setBrush(h_color)
+            p.drawEllipse(QRectF(-1.5, -9.5, 3, 3))
+            
+            # Halo (Sleek safety bar)
+            p.setPen(QPen(QColor(20, 20, 20), 0.5))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawArc(QRectF(-3, -10, 6, 6), 0, 180 * 16)
+            
+            # Occasional Sparks
+            if random.random() > 0.92:
+                p.setBrush(QColor(255, 200, 50, 200))
+                for _ in range(3):
+                    p.drawRect(QRectF(-12 - random.random()*5, -2, 1, 1))
+
+            p.restore()
+            
+        p.restore()
 
     def _draw_car_drive(self, p, w, h):
         p.save()

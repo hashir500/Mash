@@ -241,7 +241,7 @@ class SettingsWindow(QWidget):
         self.anim_menu.setPalette(pal)
         self.anim_menu.setStyleSheet(self.branding_menu.styleSheet()) # Share the premium style
 
-        for anim in ["None", "Geometry Dash", "Chrome Dino", "Car Drive"]:
+        for anim in ["None", "Geometry Dash", "Chrome Dino", "Car Drive", "F1"]:
             a_action = self.anim_menu.addAction(anim)
             a_action.triggered.connect(lambda checked, a=anim: self._set_animation_mode(a))
         
