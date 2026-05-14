@@ -1022,13 +1022,16 @@ class NotchWindow(QWidget):
 
     def _update_spotify_info(self):
         try:
-            # File-based relay to bypass Snap restrictions
-            os.system("/bin/bash /home/hashir/Documents/mash/get_spotify.sh > /home/hashir/Documents/mash/spotify_out.txt")
-            if not os.path.exists("/home/hashir/Documents/mash/spotify_out.txt"):
-                return
-
-            with open("/home/hashir/Documents/mash/spotify_out.txt", "r") as f:
-                output = f.read()
+            # Use systemd-run as a oneshot service to reliably escape AppArmor/Snap confinement
+            # (e.g., if mash is started from desktop-icons-ng, it inherits a restrictive profile)
+            result = subprocess.run(
+                ["systemd-run", "--user", "-P", "--quiet", "-p", "Type=oneshot", "/bin/bash", "/home/hashir/Documents/mash/get_spotify.sh"],
+                capture_output=True, text=True, timeout=2.0
+            )
+            output = result.stdout
+            
+            if result.returncode != 0 or not output:
+                logger.error(f"Spotify command failed. RC={result.returncode}, STDOUT='{result.stdout}', STDERR='{result.stderr}'")
             
             t_m = re.search(r"'xesam:title': <'(.*?)'>", output)
             a_m = re.search(r"'xesam:artist': <\['(.*?)'\]>", output)
@@ -1044,7 +1047,8 @@ class NotchWindow(QWidget):
             else:
                 self._spotify_song, self._spotify_artist = "", ""
                 
-        except Exception:
+        except Exception as e:
+            logger.error(f"Spotify update failed: {e}")
             self._spotify_song, self._spotify_artist = "", ""
 
     def _draw_spotify_live(self, p, w, h):
@@ -1130,9 +1134,15 @@ class NotchWindow(QWidget):
 
     def _update_spotify_enabled(self, enabled):
         self._spotify_enabled = enabled
-        if enabled: self._update_spotify_info()
+        if enabled:
+            # Force an immediate, fresh update when re-enabled
+            self._spotify_tick = 20 
+            self._spotify_song = ""
+            self._spotify_artist = ""
+            self._update_spotify_info()
         self._save_ui_config()
         self.update()
+
 
     def _update_branding(self, mode, text):
         self._branding_mode, self._branding_custom = mode, text

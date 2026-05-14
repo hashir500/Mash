@@ -207,6 +207,8 @@ class SettingsWindow(QWidget):
             action = self.branding_menu.addAction(mode)
             action.triggered.connect(lambda checked, m=mode: self._set_branding_mode(m))
 
+        self.btn_branding_mode.setMenu(self.branding_menu)
+
         # Animation Mode Selection
         self.btn_branding_anim = QPushButton("None")
         self.btn_branding_anim.setCursor(Qt.CursorShape.PointingHandCursor)
