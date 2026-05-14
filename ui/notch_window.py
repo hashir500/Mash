@@ -226,6 +226,10 @@ class NotchWindow(QWidget):
         # Auto-discover any pre-existing projects in ~/MashProjects/
         project_registry.scan_existing()
 
+        self._notch_locked = True
+        self._notch_x = None
+        self._notch_y = None
+
         self._setup_window()
         self._load_fonts()
         self._build_ui()
@@ -247,6 +251,7 @@ class NotchWindow(QWidget):
         self._settings.branding_changed.connect(self._update_branding)
         self._settings.animation_changed.connect(self._update_animation)
         self._settings.spotify_toggled.connect(self._update_spotify_enabled)
+        self._settings.lock_notch_toggled.connect(self._update_notch_lock)
         
         # Load UI Config
         self._branding_mode = "MASH"
@@ -264,10 +269,14 @@ class NotchWindow(QWidget):
         self._dino_y = 0.0
         self._dino_vy = 0.0
         self._cactus_x = 220.0
+        self._car_bounce = 0.0
+        self._car_bounce_dir = 1
+        self._building_x = 0.0
         self._spotify_song = ""
         self._spotify_artist = ""
         self._spotify_tick = 0
         self._spotify_enabled = False
+        self._spotify_scroll_x = 0.0
         self._spotify_scroll_x = 0.0
         
         # Load assets
@@ -283,10 +292,14 @@ class NotchWindow(QWidget):
                     self._branding_custom = uicfg.get("branding_text", "MASH")
                     self._anim_mode = uicfg.get("anim_mode", "None")
                     self._spotify_enabled = uicfg.get("spotify_enabled", False)
+                    self._notch_locked = uicfg.get("notch_locked", True)
+                    self._notch_x = uicfg.get("notch_x")
+                    self._notch_y = uicfg.get("notch_y")
                     
                     self._settings.btn_branding_mode.setText(self._branding_mode)
                     self._settings.btn_branding_anim.setText(self._anim_mode)
                     self._settings.check_spotify.setChecked(self._spotify_enabled)
+                    self._settings.check_lock_notch.setChecked(self._notch_locked)
                     self._settings.edit_branding.setText(self._branding_custom)
                     self._settings.custom_branding_container.setVisible(self._branding_mode == "Custom")
                     self._refresh_branding()
@@ -294,6 +307,8 @@ class NotchWindow(QWidget):
                         self._update_spotify_info()
         except Exception as e:
             logger.error(f"Failed to load UI config: {e}")
+        
+        self._position_collapsed()
 
         self._vitals_timer = QTimer(self)
         self._vitals_timer.timeout.connect(self._refresh_branding)
@@ -348,14 +363,16 @@ class NotchWindow(QWidget):
         return QApplication.primaryScreen().geometry()
 
     def _collapsed_rect(self):
+        if self._notch_x is not None and self._notch_y is not None:
+            return QRect(self._notch_x, self._notch_y, PILL_W, PILL_H)
         sr = self._screen_rect()
         cx = sr.x() + sr.width() // 2
         return QRect(cx - PILL_W // 2, sr.y(), PILL_W, PILL_H)
 
     def _expanded_rect(self):
-        sr = self._screen_rect()
-        cx = sr.x() + sr.width() // 2
-        return QRect(cx - CARD_W // 2, sr.y(), CARD_W, CARD_H)
+        c_rect = self._collapsed_rect()
+        cx = c_rect.x() + c_rect.width() // 2
+        return QRect(cx - CARD_W // 2, c_rect.y(), CARD_W, CARD_H)
 
     def _position_collapsed(self):
         self.setGeometry(self._collapsed_rect())
@@ -938,6 +955,8 @@ class NotchWindow(QWidget):
             self._draw_geometry_dash(p, w, h)
         elif self._anim_mode == "Chrome Dino":
             self._draw_chrome_dino(p, w, h)
+        elif self._anim_mode == "Car Drive":
+            self._draw_car_drive(p, w, h)
         dot_x = w - 22
         dot_y = h // 2
         dot_r = 5 + self._pulse * 2.5
@@ -952,11 +971,13 @@ class NotchWindow(QWidget):
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            self._drag_start_global = event.globalPosition().toPoint()
             if self._state == State.COLLAPSED:
                 self.setWindowFlag(Qt.WindowType.WindowDoesNotAcceptFocus, False)
                 self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
                 self.show()
-                self.expand()
+                if getattr(self, "_notch_locked", True):
+                    self.expand()
             elif self._state == State.EXPANDED:
                 if not self._panel.isVisible() or self._panel._fx.opacity() == 0.0:
                     self._panel.show_animated()
@@ -969,7 +990,21 @@ class NotchWindow(QWidget):
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.MouseButton.LeftButton and self._state == State.COLLAPSED:
-            self.move(event.globalPosition().toPoint() - self._drag_pos)
+            if not getattr(self, "_notch_locked", True):
+                new_pos = event.globalPosition().toPoint() - self._drag_pos
+                self.move(new_pos)
+                self._notch_x = new_pos.x()
+                self._notch_y = new_pos.y()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton and self._state == State.COLLAPSED:
+            if not getattr(self, "_notch_locked", True):
+                dist = (event.globalPosition().toPoint() - self._drag_start_global).manhattanLength()
+                if dist < 5:
+                    self.expand()
+                else:
+                    self._save_ui_config()
+        super().mouseReleaseEvent(event)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape and self._state == State.EXPANDED:
@@ -1019,6 +1054,106 @@ class NotchWindow(QWidget):
             if 90 < self._cactus_x < 110 and self._dino_y == 0:
                 self._dino_vy = -7.2
             self.update()
+        elif self._anim_mode == "Car Drive":
+            self._building_x -= 1.8
+            if self._building_x <= -200:
+                self._building_x = 0
+            
+            self._car_bounce += 0.25 * self._car_bounce_dir
+            if self._car_bounce > 2.0:
+                self._car_bounce = 2.0
+                self._car_bounce_dir = -1
+            elif self._car_bounce < 0.0:
+                self._car_bounce = 0.0
+                self._car_bounce_dir = 1
+            self.update()
+
+    def _draw_car_drive(self, p, w, h):
+        p.save()
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Apply clipping to keep animation inside the pill bounds
+        clip_path = QPainterPath()
+        clip_path.addRoundedRect(QRectF(0, 0, w, h), CORNER_PILL, CORNER_PILL)
+        p.setClipPath(clip_path)
+        
+        # Draw parallax buildings
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QColor(60, 60, 65, 150))
+        
+        for offset in [0, 200]:
+            bx = self._building_x + offset
+            if bx + 200 < 0 or bx > w:
+                continue
+            p.drawRect(QRectF(bx + 10, h - 25, 30, 25))
+            p.drawRect(QRectF(bx + 45, h - 35, 40, 35))
+            p.drawRect(QRectF(bx + 90, h - 20, 25, 20))
+            p.drawRect(QRectF(bx + 120, h - 30, 35, 30))
+            p.drawRect(QRectF(bx + 160, h - 15, 30, 15))
+
+            p.setBrush(QColor(255, 255, 200, 180))
+            for wx in [bx + 50, bx + 65]:
+                for wy in [h - 30, h - 20, h - 10]:
+                    p.drawRect(QRectF(wx, wy, 5, 5))
+            p.setBrush(QColor(60, 60, 65, 150))
+        
+        # Draw road line
+        p.setPen(QPen(QColor(100, 100, 100, 200), 1))
+        p.drawLine(0, h - 2, w, h - 2)
+
+        # Draw the Car
+        car_y = h - 12 + self._car_bounce
+        car_x = (w // 2) - 25
+        
+        # Tires
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QColor(20, 20, 20))
+        p.drawEllipse(QRectF(car_x + 8, car_y + 4, 8, 8))
+        p.drawEllipse(QRectF(car_x + 36, car_y + 4, 8, 8))
+        
+        # Car body (modern sleek profile)
+        p.setBrush(QColor(40, 120, 255))
+        body_path = QPainterPath()
+        body_path.moveTo(car_x + 5, car_y + 4)
+        body_path.lineTo(car_x + 2, car_y - 2)
+        body_path.lineTo(car_x + 8, car_y - 6)
+        body_path.lineTo(car_x + 18, car_y - 12)
+        body_path.lineTo(car_x + 35, car_y - 12)
+        body_path.lineTo(car_x + 45, car_y - 4)
+        body_path.lineTo(car_x + 48, car_y + 4)
+        body_path.closeSubpath()
+        p.drawPath(body_path)
+        
+        # Windows
+        p.setBrush(QColor(20, 20, 30, 220))
+        win_path = QPainterPath()
+        win_path.moveTo(car_x + 10, car_y - 5)
+        win_path.lineTo(car_x + 19, car_y - 10)
+        win_path.lineTo(car_x + 28, car_y - 10)
+        win_path.lineTo(car_x + 28, car_y - 5)
+        win_path.closeSubpath()
+        p.drawPath(win_path)
+        
+        win_path2 = QPainterPath()
+        win_path2.moveTo(car_x + 30, car_y - 5)
+        win_path2.lineTo(car_x + 30, car_y - 10)
+        win_path2.lineTo(car_x + 36, car_y - 10)
+        win_path2.lineTo(car_x + 42, car_y - 5)
+        win_path2.closeSubpath()
+        p.drawPath(win_path2)
+
+        # Headlight beam
+        rg = QRadialGradient(car_x + 5, car_y, 25)
+        rg.setColorAt(0, QColor(255, 255, 200, 150))
+        rg.setColorAt(1, QColor(255, 255, 200, 0))
+        p.setBrush(rg)
+        p.drawEllipse(QRectF(car_x - 20, car_y - 12, 50, 25))
+
+        # Taillight
+        p.setBrush(QColor(255, 50, 50))
+        p.drawRect(QRectF(car_x + 46, car_y - 2, 2, 4))
+        
+        p.restore()
 
     def _update_spotify_info(self):
         try:
@@ -1149,10 +1284,23 @@ class NotchWindow(QWidget):
         self._refresh_branding()
         self._save_ui_config()
 
+    def _update_notch_lock(self, locked):
+        self._notch_locked = locked
+        self._save_ui_config()
+
     def _save_ui_config(self):
         try:
             cfg_path = os.path.join(os.path.dirname(__file__), "..", "ai", "ui_config.json")
-            data = {"branding_mode": self._branding_mode, "branding_text": self._branding_custom, "anim_mode": self._anim_mode, "spotify_enabled": self._spotify_enabled, "auto_collapse": True}
+            data = {
+                "branding_mode": self._branding_mode, 
+                "branding_text": self._branding_custom, 
+                "anim_mode": self._anim_mode, 
+                "spotify_enabled": self._spotify_enabled, 
+                "auto_collapse": True,
+                "notch_locked": getattr(self, "_notch_locked", True),
+                "notch_x": getattr(self, "_notch_x", None),
+                "notch_y": getattr(self, "_notch_y", None)
+            }
             with open(cfg_path, "w") as f: json.dump(data, f, indent=2)
         except Exception as e: logger.error(f"Failed to save UI config: {e}")
 

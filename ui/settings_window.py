@@ -11,6 +11,7 @@ class SettingsWindow(QWidget):
     branding_changed = pyqtSignal(str, str) # mode, custom_text
     animation_changed = pyqtSignal(str)     # anim_mode
     spotify_toggled = pyqtSignal(bool)      # enabled
+    lock_notch_toggled = pyqtSignal(bool)   # locked
 
     def __init__(self, parent=None):
         super().__init__()
@@ -220,7 +221,7 @@ class SettingsWindow(QWidget):
         self.anim_menu.setPalette(pal)
         self.anim_menu.setStyleSheet(self.branding_menu.styleSheet()) # Share the premium style
 
-        for anim in ["None", "Geometry Dash", "Chrome Dino"]:
+        for anim in ["None", "Geometry Dash", "Chrome Dino", "Car Drive"]:
             a_action = self.anim_menu.addAction(anim)
             a_action.triggered.connect(lambda checked, a=anim: self._set_animation_mode(a))
         
@@ -258,8 +259,11 @@ class SettingsWindow(QWidget):
 
         self.check_collapse = QCheckBox("Automatically shrink notch when inactive")
         self.check_collapse.setChecked(True)
+        self.check_lock_notch = QCheckBox("Lock Notch Position")
+        self.check_lock_notch.setChecked(True)
         group_behavior = self._create_section("BEHAVIOR", [
             ("", self.check_collapse),
+            ("", self.check_lock_notch),
         ])
         layout.addWidget(group_behavior)
 
@@ -394,9 +398,11 @@ class SettingsWindow(QWidget):
         text = self.edit_branding.text()
         anim = self.btn_branding_anim.text()
         spotify = self.check_spotify.isChecked()
+        locked = self.check_lock_notch.isChecked()
         self.branding_changed.emit(mode, text)
         self.animation_changed.emit(anim)
         self.spotify_toggled.emit(spotify)
+        self.lock_notch_toggled.emit(locked)
 
     def _setup_animation(self):
         self._fx = QGraphicsOpacityEffect(self)

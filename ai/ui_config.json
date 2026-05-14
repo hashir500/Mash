@@ -1,7 +1,10 @@
 {
   "branding_mode": "Date",
   "branding_text": "Hashir ",
-  "anim_mode": "Chrome Dino",
+  "anim_mode": "Car Drive",
   "spotify_enabled": true,
-  "auto_collapse": true
+  "auto_collapse": true,
+  "notch_locked": true,
+  "notch_x": 861,
+  "notch_y": 25
 }
