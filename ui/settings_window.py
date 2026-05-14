@@ -2,13 +2,14 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QLineEdit, QPushButton, QFrame, QGraphicsOpacityEffect,
-    QScrollArea, QComboBox, QTextEdit, QStackedWidget, QCheckBox
+    QScrollArea, QComboBox, QTextEdit, QStackedWidget, QCheckBox, QMenu
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QPropertyAnimation, QEasingCurve, QRect, QRectF, QTimer, QPoint
 from PyQt6.QtGui import QColor, QPainter, QLinearGradient, QPainterPath, QPen, QFont
 
 class SettingsWindow(QWidget):
     branding_changed = pyqtSignal(str, str) # mode, custom_text
+    animation_changed = pyqtSignal(str)     # anim_mode
 
     def __init__(self, parent=None):
         super().__init__()
@@ -166,20 +167,81 @@ class SettingsWindow(QWidget):
         layout.setContentsMargins(0, 0, 15, 0)
         layout.setSpacing(35)
 
-        self.combo_branding = QComboBox()
-        self.combo_branding.addItems(["MASH", "Date", "Time", "Memory Usage", "CPU Usage", "Custom"])
+        self.btn_branding_mode = QPushButton("MASH")
+        self.btn_branding_mode.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_branding_mode.setFixedWidth(200)
+        
+        self.branding_menu = QMenu(self)
+        self.branding_menu.setWindowFlags(self.branding_menu.windowFlags() | Qt.WindowType.FramelessWindowHint | Qt.WindowType.NoDropShadowWindowHint)
+        self.branding_menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        
+        # Style the menu to match AnimatedMenu
+        from PyQt6.QtGui import QPalette, QColor
+        pal = self.branding_menu.palette()
+        pal.setColor(QPalette.ColorRole.Window, QColor("#18181b"))
+        pal.setColor(QPalette.ColorRole.Base, QColor("#18181b"))
+        self.branding_menu.setPalette(pal)
+        
+        self.branding_menu.setStyleSheet("""
+            QMenu {
+                background-color: #18181b;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 12px;
+                padding: 6px;
+                color: white;
+            }
+            QMenu::item {
+                padding: 10px 24px;
+                border-radius: 8px;
+                margin: 2px 4px;
+                color: rgba(255, 255, 255, 0.7);
+            }
+            QMenu::item:selected {
+                background-color: rgba(99, 102, 241, 0.4);
+                color: white;
+            }
+        """)
+
+        for mode in ["MASH", "Date", "Time", "Memory Usage", "CPU Usage", "Custom"]:
+            action = self.branding_menu.addAction(mode)
+            action.triggered.connect(lambda checked, m=mode: self._set_branding_mode(m))
+
+        # Animation Mode Selection
+        self.btn_branding_anim = QPushButton("None")
+        self.btn_branding_anim.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_branding_anim.setFixedWidth(200)
+        
+        self.anim_menu = QMenu(self)
+        self.anim_menu.setWindowFlags(self.anim_menu.windowFlags() | Qt.WindowType.FramelessWindowHint | Qt.WindowType.NoDropShadowWindowHint)
+        self.anim_menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.anim_menu.setPalette(pal)
+        self.anim_menu.setStyleSheet(self.branding_menu.styleSheet()) # Share the premium style
+
+        for anim in ["None", "Geometry Dash", "Chrome Dino"]:
+            a_action = self.anim_menu.addAction(anim)
+            a_action.triggered.connect(lambda checked, a=anim: self._set_animation_mode(a))
+        
+        self.btn_branding_anim.setMenu(self.anim_menu)
+
         self.edit_branding = QLineEdit("MASH")
         self.edit_branding.setPlaceholderText("Enter custom text...")
         
-        # Hide custom text unless mode is Custom
-        self.edit_branding.setVisible(False)
-        self.combo_branding.currentTextChanged.connect(
-            lambda t: self.edit_branding.setVisible(t == "Custom")
-        )
+        # Wrap custom text in a container to toggle label + input together
+        self.custom_branding_container = QWidget()
+        custom_vbox = QVBoxLayout(self.custom_branding_container)
+        custom_vbox.setContentsMargins(0, 0, 0, 0)
+        custom_vbox.setSpacing(6)
+        
+        custom_lbl = QLabel("Custom Text")
+        custom_lbl.setStyleSheet("color: rgba(255, 255, 255, 0.6); font-size: 11px; font-weight: 500;")
+        custom_vbox.addWidget(custom_lbl)
+        custom_vbox.addWidget(self.edit_branding)
+        self.custom_branding_container.setVisible(False)
 
         group_branding = self._create_section("NOTCH BRANDING", [
-            ("Display Mode", self.combo_branding),
-            ("Custom Text", self.edit_branding),
+            ("Display Mode", self.btn_branding_mode),
+            ("Notch Animation", self.btn_branding_anim),
+            ("", self.custom_branding_container),
         ])
         layout.addWidget(group_branding)
 
@@ -239,8 +301,33 @@ class SettingsWindow(QWidget):
                     widget.addItems(item[2])
                 # Modernize the popup view
                 from PyQt6.QtWidgets import QListView
+                from PyQt6.QtGui import QPalette
                 view = QListView()
-                view.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+                
+                # Force the window background to match our dark theme
+                pal = view.palette()
+                pal.setColor(QPalette.ColorRole.Window, QColor("#18181b"))
+                pal.setColor(QPalette.ColorRole.Base, QColor("#18181b"))
+                view.setPalette(pal)
+                view.setAutoFillBackground(True)
+
+                view.setStyleSheet("""
+                    QListView {
+                        background-color: #18181b;
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        border-radius: 10px;
+                        color: white;
+                        outline: none;
+                    }
+                    QListView::item {
+                        padding: 10px 16px;
+                        color: white;
+                    }
+                    QListView::item:selected {
+                        background-color: rgba(99, 102, 241, 0.4);
+                        color: white;
+                    }
+                """)
                 widget.setView(view)
             
             f_layout = QVBoxLayout()
@@ -250,12 +337,14 @@ class SettingsWindow(QWidget):
                 f_lbl.setStyleSheet("color: rgba(255, 255, 255, 0.6); font-size: 11px; font-weight: 500;")
                 f_layout.addWidget(f_lbl)
             widget.setStyleSheet("""
-                QLineEdit, QComboBox, QTextEdit, QCheckBox {
+                QLineEdit, QComboBox, QTextEdit, QCheckBox, QPushButton {
                     background: rgba(255, 255, 255, 0.03);
                     border: 1px solid rgba(255, 255, 255, 0.06);
                     border-radius: 8px; padding: 12px;
                     color: white; font-size: 12px;
+                    text-align: left;
                 }
+                QPushButton::menu-indicator { image: none; }
                 QComboBox {
                     padding-right: 24px;
                 }
@@ -271,15 +360,6 @@ class SettingsWindow(QWidget):
                     margin-right: 12px;
                     margin-top: 2px;
                 }
-                QComboBox QAbstractItemView {
-                    background-color: #1a1a1c;
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    border-radius: 10px;
-                    selection-background-color: rgba(99, 102, 241, 0.4);
-                    color: white;
-                    outline: none;
-                    padding: 4px;
-                }
                 QCheckBox { border: none; background: transparent; padding: 0; }
                 QLineEdit:focus, QTextEdit:focus, QComboBox:focus { 
                     border: 1px solid rgba(99, 102, 241, 0.3); 
@@ -291,11 +371,19 @@ class SettingsWindow(QWidget):
             layout.addLayout(f_layout)
         return group
 
+    def _set_branding_mode(self, mode):
+        self.btn_branding_mode.setText(mode)
+        self.custom_branding_container.setVisible(mode == "Custom")
+
+    def _set_animation_mode(self, anim):
+        self.btn_branding_anim.setText(anim)
+
     def _save_and_close(self):
-        mode = self.combo_branding.currentText()
+        mode = self.btn_branding_mode.text()
         text = self.edit_branding.text()
+        anim = self.btn_branding_anim.text()
         self.branding_changed.emit(mode, text)
-        self.hide_animated()
+        self.animation_changed.emit(anim)
 
     def _setup_animation(self):
         self._fx = QGraphicsOpacityEffect(self)

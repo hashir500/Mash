@@ -243,11 +243,24 @@ class NotchWindow(QWidget):
 
         self._settings = SettingsWindow(self)
         self._settings.branding_changed.connect(self._update_branding)
+        self._settings.animation_changed.connect(self._update_animation)
         
         # Load UI Config
         self._branding_mode = "MASH"
         self._branding_custom = "MASH"
         self._branding_text = "MASH"
+        self._anim_mode = "None"
+        
+        # Animation state
+        self._anim_timer = QTimer(self)
+        self._anim_timer.timeout.connect(self._on_anim_tick)
+        self._anim_timer.start(16) # ~60 FPS
+        self._gd_cube_y = 0.0
+        self._gd_cube_vy = 0.0
+        self._gd_spike_x = 220.0
+        self._dino_y = 0.0
+        self._dino_vy = 0.0
+        self._cactus_x = 220.0
         
         try:
             cfg_path = os.path.join(os.path.dirname(__file__), "..", "ai", "ui_config.json")
@@ -256,9 +269,13 @@ class NotchWindow(QWidget):
                     uicfg = json.load(f)
                     self._branding_mode = uicfg.get("branding_mode", "MASH")
                     self._branding_custom = uicfg.get("branding_text", "MASH")
-                    self._settings.combo_branding.setCurrentText(self._branding_mode)
+                    self._anim_mode = uicfg.get("anim_mode", "None")
+                    
+                    self._settings.btn_branding_mode.setText(self._branding_mode)
+                    self._settings.btn_branding_anim.setText(self._anim_mode)
                     self._settings.edit_branding.setText(self._branding_custom)
-                    self._settings.edit_branding.setVisible(self._branding_mode == "Custom")
+                    self._settings.custom_branding_container.setVisible(self._branding_mode == "Custom")
+                    self._refresh_branding()
         except Exception as e:
             logger.error(f"Failed to load UI config: {e}")
 
@@ -1302,15 +1319,24 @@ class NotchWindow(QWidget):
             self._paint_pill_content(p, w, h)
 
     def _paint_pill_content(self, p, w, h):
-        # Modern letter-spaced typography
-        font = QFont("Inter", 10, QFont.Weight.DemiBold)
-        font.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 110)
-        p.setFont(font)
-        
-        alpha = int(200 + 55 * self._pulse)
-        p.setPen(QColor(255, 255, 255, alpha))
-        # Nudge text for optical balance
-        p.drawText(QRect(0, 1, w - 28, h), Qt.AlignmentFlag.AlignCenter, self._branding_text)
+        # 1. Draw Branding Text (Only if no animation is active)
+        if self._anim_mode == "None":
+            font = QFont("Inter", 10, QFont.Weight.DemiBold)
+            font.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 110)
+            p.setFont(font)
+            
+            text_rect = QRect(0, 1, w - 28, h)
+            alpha = int(200 + 55 * self._pulse)
+            p.setPen(QColor(255, 255, 255, alpha))
+            p.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, self._branding_text)
+
+        # 2. Draw Animation
+        if self._anim_mode == "Geometry Dash":
+            self._draw_geometry_dash(p, w, h)
+        elif self._anim_mode == "Chrome Dino":
+            self._draw_chrome_dino(p, w, h)
+
+        # 3. Draw pulse dot indicator
 
         dot_x = w - 22
         dot_y = h // 2
@@ -1389,16 +1415,154 @@ class NotchWindow(QWidget):
 
         super().keyPressEvent(event)
 
+    def _on_anim_tick(self):
+        # Only animate when collapsed to save resources and avoid visual clutter
+        if self._state != State.COLLAPSED or self._animating:
+            return
+
+        if self._anim_mode == "Geometry Dash":
+            # Jump physics (Slower/Cinematic)
+            self._gd_cube_vy += 0.45 # Reduced Gravity
+            self._gd_cube_y += self._gd_cube_vy
+            
+            if self._gd_cube_y > 0:
+                self._gd_cube_y = 0
+                self._gd_cube_vy = 0
+                
+            # Scroll spike (Slower)
+            self._gd_spike_x -= 2.2
+            if self._gd_spike_x < -20:
+                self._gd_spike_x = 220 # Respawn
+                
+            # Adjusted auto-jump sensor for slower speed
+            if self._gd_spike_x < 115 and self._gd_spike_x > 100 and self._gd_cube_y == 0:
+                self._gd_cube_vy = -6.2 # JUMP
+            
+            self.update()
+        elif self._anim_mode == "Chrome Dino":
+            # Dino physics
+            self._dino_vy += 0.55 # Gravity
+            self._dino_y += self._dino_vy
+            
+            if self._dino_y > 0:
+                self._dino_y = 0
+                self._dino_vy = 0
+                
+            # Scroll cactus
+            self._cactus_x -= 2.6
+            if self._cactus_x < -20:
+                self._cactus_x = 220
+                
+            # Perfect jump sensor
+            if self._cactus_x < 110 and self._cactus_x > 90 and self._dino_y == 0:
+                self._dino_vy = -7.2 # JUMP
+            
+            self.update()
+
+    def _draw_chrome_dino(self, p, w, h):
+        p.save()
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        floor_y = (h // 2) + 6
+        
+        # Dino (Iconic T-Rex Silhouette)
+        d_x = (w // 2) - 40
+        d_y = floor_y + self._dino_y
+        
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QColor(160, 160, 160, 240)) # Classic Dino Grey
+        
+        # 1. Head & Snout
+        p.drawRect(QRectF(d_x + 10, d_y - 18, 10, 6)) # Upper head
+        p.drawRect(QRectF(d_x + 15, d_y - 12, 5, 2))  # Snout bottom
+        
+        # 2. Eye
+        p.setBrush(QColor(5, 5, 5, 180))
+        p.drawRect(QRectF(d_x + 12, d_y - 16, 2, 2))
+        
+        # 3. Neck & Body
+        p.setBrush(QColor(160, 160, 160, 240))
+        p.drawRect(QRectF(d_x + 8, d_y - 12, 4, 4))  # Neck
+        p.drawRect(QRectF(d_x + 2, d_y - 10, 8, 7))  # Main body
+        
+        # 4. Tail
+        p.drawRect(QRectF(d_x, d_y - 8, 2, 3)) 
+        p.drawRect(QRectF(d_x - 2, d_y - 6, 2, 2))
+        
+        # 5. Arm
+        p.drawRect(QRectF(d_x + 10, d_y - 7, 3, 2))
+        
+        # 6. Legs
+        p.drawRect(QRectF(d_x + 3, d_y - 3, 3, 3))
+        p.drawRect(QRectF(d_x + 7, d_y - 3, 3, 3))
+        
+        # Cactus (Darker Desert Green)
+        c_x = self._cactus_x
+        c_y = floor_y
+        
+        if 10 < c_x < w - 20:
+            p.setPen(QPen(QColor(80, 120, 80, 220), 1.5))
+            p.setBrush(QColor(80, 120, 80, 40))
+            # Main stalk (Triple-Cactus Style)
+            p.drawRoundedRect(QRectF(c_x + 3, c_y - 12, 4, 12), 1, 1)
+            p.drawRoundedRect(QRectF(c_x - 2, c_y - 8, 3, 5), 1, 1)
+            p.drawRoundedRect(QRectF(c_x + 9, c_y - 10, 3, 6), 1, 1)
+            
+        p.restore()
+
+    def _draw_geometry_dash(self, p, w, h):
+        p.save()
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Floor line for reference
+        floor_y = (h // 2) + 6
+        
+        # Cube (Cyan Glow) - Centered better since text is gone
+        cube_size = 11
+        cube_x = (w // 2) - 30 # Offset from center
+        cube_y = floor_y + self._gd_cube_y
+        
+        p.setPen(QPen(QColor(0, 255, 255, 180), 1.5))
+        p.setBrush(QColor(0, 255, 255, 40))
+        p.drawRoundedRect(QRectF(cube_x, cube_y - cube_size, cube_size, cube_size), 2, 2)
+        
+        # Spike (Red Danger)
+        spike_w, spike_h = 10, 10
+        spike_x = self._gd_spike_x
+        spike_y = floor_y
+        
+        # Spike respawn logic already handles the full width (220)
+        # Only draw spike if within pill bounds
+        if 10 < spike_x < w - 20:
+            p.setPen(QPen(QColor(255, 50, 50, 180), 1.5))
+            p.setBrush(QColor(255, 50, 50, 40))
+            spike_path = QPainterPath()
+            spike_path.moveTo(spike_x, spike_y)
+            spike_path.lineTo(spike_x + spike_w/2, spike_y - spike_h)
+            spike_path.lineTo(spike_x + spike_w, spike_y)
+            spike_path.closeSubpath()
+            p.drawPath(spike_path)
+            
+        p.restore()
+
+    def _update_animation(self, anim):
+        self._anim_mode = anim
+        self._save_ui_config()
+        self.update()
+
     def _update_branding(self, mode, text):
         self._branding_mode = mode
         self._branding_custom = text
         self._refresh_branding()
-        # Save to config
+        self._save_ui_config()
+
+    def _save_ui_config(self):
         try:
             cfg_path = os.path.join(os.path.dirname(__file__), "..", "ai", "ui_config.json")
             data = {
                 "branding_mode": self._branding_mode, 
                 "branding_text": self._branding_custom,
+                "anim_mode": self._anim_mode,
                 "auto_collapse": True
             }
             with open(cfg_path, "w") as f:
@@ -1417,7 +1581,7 @@ class NotchWindow(QWidget):
         elif mode == "Memory Usage":
             mem = psutil.virtual_memory()
             used_gb = mem.used / (1024**3)
-            self._branding_text = f"MEM {used_gb:.1f}G"
+            self._branding_text = f"MEM {used_gb:.1f} GB"
         elif mode == "CPU Usage":
             cpu = psutil.cpu_percent()
             self._branding_text = f"CPU {int(cpu)}%"
@@ -1435,6 +1599,8 @@ class NotchWindow(QWidget):
     def closeEvent(self, event):
         self._raise_timer.stop()
         self._panel.close()
+        if hasattr(self, '_settings'):
+            self._settings.close()
         if self._worker:
             self._worker.abort()
             self._worker.wait(2000)

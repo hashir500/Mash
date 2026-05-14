@@ -166,6 +166,33 @@ class AnimatedMenu(QMenu):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
+        # Palette Lock for dark theme stability
+        from PyQt6.QtGui import QPalette, QColor
+        pal = self.palette()
+        pal.setColor(QPalette.ColorRole.Window, QColor("#18181b"))
+        pal.setColor(QPalette.ColorRole.Base, QColor("#18181b"))
+        self.setPalette(pal)
+
+        self.setStyleSheet("""
+            QMenu {
+                background-color: #18181b;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 12px;
+                padding: 6px;
+                color: white;
+            }
+            QMenu::item {
+                padding: 10px 24px;
+                border-radius: 8px;
+                margin: 2px 4px;
+                color: rgba(255, 255, 255, 0.7);
+            }
+            QMenu::item:selected {
+                background-color: rgba(99, 102, 241, 0.4);
+                color: white;
+            }
+        """)
+        
         self._fx = QGraphicsOpacityEffect(self)
         self.setGraphicsEffect(self._fx)
         
