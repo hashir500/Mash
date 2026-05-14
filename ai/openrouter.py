@@ -41,7 +41,7 @@ class StreamWorker(QThread):
         self._abort = True
 
     def run(self):
-        logger.debug(f"Starting StreamWorker with model: {self.model_id}")
+        logger.info(f"StreamWorker starting: model={self.model_id}, has_key={bool(self.api_key)}")
         try:
             # Handle attachment
             if self.attachment_path and os.path.exists(self.attachment_path):
@@ -101,7 +101,7 @@ class StreamWorker(QThread):
         }
         with httpx.Client(timeout=90.0) as client:
             with client.stream("POST", self.API_URL, headers=headers, json=payload) as resp:
-                logger.debug(f"OpenRouter Response Status: {resp.status_code}")
+                logger.info(f"OpenRouter response: {resp.status_code} for model={self.model_id}")
                 resp.raise_for_status()
                 for line in resp.iter_lines():
                     if self._abort: break

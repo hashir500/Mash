@@ -219,9 +219,13 @@ class NotchWindow(QWidget):
         self._drag_pos      = QPoint()
         self._worker: StreamWorker | None = None
         self._agentic_worker: AgenticCodingWorker | None = None
-        self._history: list[dict] = []
+        # Per-mode conversation histories so context doesn't bleed between modes
+        self._histories: dict[str, list[dict]] = {"general": [], "reasoning": [], "coding": []}
         
         self._api_key = os.getenv("OPENROUTER_API_KEY", "")
+        self._model_general = "minimax/minimax-m2.5:free"
+        self._model_reasoning = "minimax/minimax-m2.5:free"
+        self._model_coding = "minimax/minimax-m2.5:free"
 
         # Auto-discover any pre-existing projects in ~/MashProjects/
         project_registry.scan_existing()
@@ -252,6 +256,7 @@ class NotchWindow(QWidget):
         self._settings.animation_changed.connect(self._update_animation)
         self._settings.spotify_toggled.connect(self._update_spotify_enabled)
         self._settings.lock_notch_toggled.connect(self._update_notch_lock)
+        self._settings.config_updated.connect(self._update_ai_config)
         
         # Load UI Config
         self._branding_mode = "MASH"
@@ -295,6 +300,17 @@ class NotchWindow(QWidget):
                     self._notch_locked = uicfg.get("notch_locked", True)
                     self._notch_x = uicfg.get("notch_x")
                     self._notch_y = uicfg.get("notch_y")
+                    
+                    self._model_general = uicfg.get("model_general", self._model_general)
+                    self._model_reasoning = uicfg.get("model_reasoning", self._model_reasoning)
+                    self._model_coding = uicfg.get("model_coding", self._model_coding)
+                    if "api_key" in uicfg and uicfg["api_key"]:
+                        self._api_key = uicfg["api_key"]
+                    
+                    self._settings.edit_api_key.setText(self._api_key)
+                    self._set_button_model(self._settings.btn_model_gen, self._model_general)
+                    self._set_button_model(self._settings.btn_model_res, self._model_reasoning)
+                    self._set_button_model(self._settings.btn_model_cod, self._model_coding)
                     
                     self._settings.btn_branding_mode.setText(self._branding_mode)
                     self._settings.btn_branding_anim.setText(self._anim_mode)
@@ -600,7 +616,7 @@ class NotchWindow(QWidget):
             self._panel.chat.append_token("Usage: `/code <describe what to build>`")
             self._panel.chat.finalize_assistant_message()
             return
-        self._panel.mode_selector._on_clicked("coding")
+        self._panel.input.mode_dropdown._on_clicked("coding")
         self._on_submit(prompt)
 
     def _cmd_debug(self, prompt: str):
@@ -615,7 +631,7 @@ class NotchWindow(QWidget):
             f"Debug and fix this issue in my project"
             f"{f' at {ws}' if ws else ''}: {prompt}"
         )
-        self._panel.mode_selector._on_clicked("coding")
+        self._panel.input.mode_dropdown._on_clicked("coding")
         self._on_submit(debug_prompt)
 
     def _cmd_chat(self, msg: str):
@@ -625,7 +641,7 @@ class NotchWindow(QWidget):
             self._panel.chat.append_token("Usage: `/chat <your message>`")
             self._panel.chat.finalize_assistant_message()
             return
-        self._panel.mode_selector._on_clicked("general")
+        self._panel.input.mode_dropdown._on_clicked("general")
         self._on_submit(msg)
 
     def _cmd_explain(self, topic: str):
@@ -635,7 +651,7 @@ class NotchWindow(QWidget):
             self._panel.chat.append_token("Usage: `/explain <topic, concept, or paste code>`")
             self._panel.chat.finalize_assistant_message()
             return
-        self._panel.mode_selector._on_clicked("general")
+        self._panel.input.mode_dropdown._on_clicked("general")
         self._on_submit(f"Explain this clearly and concisely: {topic}")
 
     def _on_submit(self, text: str, attachment: str = ""):
@@ -650,14 +666,19 @@ class NotchWindow(QWidget):
         display_text = text if text else f"[File Attached]"
         self._panel.chat.add_user_message(display_text)
         
-        self._history.append({"role": "user", "content": text})
+        mode = self._panel.input.mode_dropdown._current_mode
+        self._histories[mode].append({"role": "user", "content": text})
         self._panel.input.set_enabled(False)
         self._panel.input.set_generating(True)
         self._char.set_thinking(True)
         self._panel.chat.start_assistant_message()
 
-        mode = self._panel.mode_selector.current_mode()
-        model_id = StreamWorker.get_model_for_mode(mode, self._api_key)
+        if mode == "reasoning":
+            model_id = self._model_reasoning
+        elif mode == "coding":
+            model_id = self._model_coding
+        else:
+            model_id = self._model_general
 
         if mode == "coding":
             _run_keywords = ["install ", "run ", "execute ", "start ", "pip ", "npm ",
@@ -778,7 +799,18 @@ class NotchWindow(QWidget):
             self._nanobot_worker.finished.connect(self._on_nanobot_finished)
             self._nanobot_worker.start()
         else:
-            messages = list(self._history)
+            history = self._histories[mode]
+            model_name = model_id.split("/")[-1].replace(":free", "")
+            system_msg = {
+                "role": "system",
+                "content": (
+                    f"You are Mash, a premium minimalist AI assistant. "
+                    f"You are currently running on the {model_name} model in {mode} mode. "
+                    f"When asked which model you are, always state '{model_name}'. "
+                    f"Be concise, sharp, and helpful."
+                )
+            }
+            messages = [system_msg] + list(history)
             self._worker = StreamWorker(
                 messages,
                 self._api_key,
@@ -881,7 +913,8 @@ class NotchWindow(QWidget):
         if self._panel.chat._current_bubble:
             final_text = self._panel.chat._current_bubble._text
             if final_text:
-                self._history.append({"role": "assistant", "content": final_text})
+                mode = self._panel.input.mode_dropdown._current_mode
+                self._histories[mode].append({"role": "assistant", "content": final_text})
         self._panel.chat.finalize_assistant_message()
         self._panel.input.set_generating(False)
         self._panel.input.set_enabled(True)
@@ -890,7 +923,7 @@ class NotchWindow(QWidget):
         self._worker = None
 
     def _clear_history(self):
-        self._history = []
+        self._histories = {"general": [], "reasoning": [], "coding": []}
         self._panel.chat.add_user_message("✨ <i>History cleared.</i>")
 
     def _on_error(self, msg: str):
@@ -1024,7 +1057,7 @@ class NotchWindow(QWidget):
     def _on_anim_tick(self):
         if self._spotify_enabled:
             self._spotify_tick += 1
-            if self._spotify_tick >= 20:
+            if self._spotify_tick >= 625:  # ~10s at 16ms intervals
                 self._spotify_tick = 0
                 self._update_spotify_info()
             if self._spotify_song != "":
@@ -1157,23 +1190,19 @@ class NotchWindow(QWidget):
 
     def _update_spotify_info(self):
         try:
-            # Use systemd-run as a oneshot service to reliably escape AppArmor/Snap confinement
-            # (e.g., if mash is started from desktop-icons-ng, it inherits a restrictive profile)
             result = subprocess.run(
                 ["systemd-run", "--user", "-P", "--quiet", "-p", "Type=oneshot", "/bin/bash", "/home/hashir/Documents/mash/get_spotify.sh"],
-                capture_output=True, text=True, timeout=2.0
+                capture_output=True, text=True, timeout=3.0
             )
             output = result.stdout
-            
             if result.returncode != 0 or not output:
-                logger.error(f"Spotify command failed. RC={result.returncode}, STDOUT='{result.stdout}', STDERR='{result.stderr}'")
-            
+                # Silently clear — Spotify likely not open
+                self._spotify_song, self._spotify_artist = "", ""
+                return
             t_m = re.search(r"'xesam:title': <'(.*?)'>", output)
             a_m = re.search(r"'xesam:artist': <\['(.*?)'\]>", output)
-            
             title = t_m.group(1).strip() if t_m else ""
             artist = a_m.group(1).strip() if a_m else ""
-
             if title:
                 if title != self._spotify_song:
                     self._spotify_song = title
@@ -1181,9 +1210,7 @@ class NotchWindow(QWidget):
                 self._spotify_artist = artist
             else:
                 self._spotify_song, self._spotify_artist = "", ""
-                
-        except Exception as e:
-            logger.error(f"Spotify update failed: {e}")
+        except Exception:
             self._spotify_song, self._spotify_artist = "", ""
 
     def _draw_spotify_live(self, p, w, h):
@@ -1288,6 +1315,18 @@ class NotchWindow(QWidget):
         self._notch_locked = locked
         self._save_ui_config()
 
+    def _update_ai_config(self, config_data):
+        self._api_key = config_data.get("api_key", self._api_key)
+        self._model_general = config_data.get("model_general", self._model_general)
+        self._model_reasoning = config_data.get("model_reasoning", self._model_reasoning)
+        self._model_coding = config_data.get("model_coding", self._model_coding)
+        self._save_ui_config()
+
+    def _set_button_model(self, btn, value):
+        btn.model_id = value
+        text = getattr(self._settings, "models_dict", {}).get(value, value)
+        btn.setText(text)
+
     def _save_ui_config(self):
         try:
             cfg_path = os.path.join(os.path.dirname(__file__), "..", "ai", "ui_config.json")
@@ -1299,7 +1338,11 @@ class NotchWindow(QWidget):
                 "auto_collapse": True,
                 "notch_locked": getattr(self, "_notch_locked", True),
                 "notch_x": getattr(self, "_notch_x", None),
-                "notch_y": getattr(self, "_notch_y", None)
+                "notch_y": getattr(self, "_notch_y", None),
+                "api_key": self._api_key,
+                "model_general": self._model_general,
+                "model_reasoning": self._model_reasoning,
+                "model_coding": self._model_coding
             }
             with open(cfg_path, "w") as f: json.dump(data, f, indent=2)
         except Exception as e: logger.error(f"Failed to save UI config: {e}")

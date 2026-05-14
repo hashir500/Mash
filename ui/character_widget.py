@@ -42,6 +42,7 @@ class CharacterWidget(QWidget):
         self._blink_factor = 1.0
         self._is_blinking  = False
         self._mode         = "general"
+        self._idle_anim    = "orb"   # orb | pulse | orbit
 
     # ── Public API ─────────────────────────────────────────────────────────
 
@@ -72,6 +73,11 @@ class CharacterWidget(QWidget):
 
     def set_mode(self, mode: str):
         self._mode = mode
+        self.update()
+
+    def set_idle_anim(self, anim: str):
+        """Switch idle animation: 'orb', 'pulse', or 'orbit'."""
+        self._idle_anim = anim
         self.update()
 
     # ── Animation loop ─────────────────────────────────────────────────────
@@ -562,6 +568,122 @@ class CharacterWidget(QWidget):
         mouth_y = cy + 34 + float_y + (mouth_h / 2.0 if self._anim_state == "YAWNING" else 0)
         yawn_off = mouth_h if self._anim_state == "YAWNING" else 0
 
+        # ── Idle dispatcher ────────────────────────────────────────────────
+        if self._idle_anim == "pulse":
+            self._draw_pulse_anim(p, w, h)
+        elif self._idle_anim == "orbit":
+            self._draw_orbit_anim(p, w, h)
+        else:
+            self._draw_orb_idle(p, w, h, cx, cy, float_y, look_x, look_y, mouth_w, mouth_h)
+
+    # ── Pulse idle animation ───────────────────────────────────────────────
+
+    def _draw_pulse_anim(self, p, w, h):
+        cx, cy = w / 2.0, h / 2.0
+        t = self._tick
+        # Breathing: 0..1..0 over ~120 ticks
+        breath = 0.5 + 0.5 * math.sin(t * 0.052)
+
+        # Radial ripple
+        for ring in range(3):
+            age = (t + ring * 40) % 120
+            r_alpha = int(60 * (1 - age / 120))
+            r_radius = 30 + age * 1.4
+            p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
+            rg = QRadialGradient(cx, cy, r_radius)
+            rg.setColorAt(0.0, QColor(99, 102, 241, 0))
+            rg.setColorAt(0.7, QColor(99, 102, 241, r_alpha))
+            rg.setColorAt(1.0, QColor(99, 102, 241, 0))
+            p.setBrush(rg)
+            p.setPen(Qt.PenStyle.NoPen)
+            p.drawEllipse(QRectF(cx - r_radius, cy - r_radius, r_radius * 2, r_radius * 2))
+
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+        # Eyes breathe: scale with breath
+        eye_w = 44 + breath * 8
+        eye_h = max(4.0, (20 + breath * 40))
+        eye_spacing = 82
+        eye_y = cy - eye_h / 2.0 - 16
+        lx = cx - eye_spacing / 2.0 - eye_w / 2.0
+        rx = cx + eye_spacing / 2.0 - eye_w / 2.0
+        glow_alpha = int(80 + breath * 100)
+        self._draw_glowing_pill(p, QRectF(lx, eye_y, eye_w, eye_h), glow_alpha=glow_alpha)
+        self._draw_glowing_pill(p, QRectF(rx, eye_y, eye_w, eye_h), glow_alpha=glow_alpha)
+
+        # Tiny smile breathes too
+        smile_w = 20 + breath * 16
+        smile_h = 6 + breath * 8
+        smile_x = cx - smile_w / 2.0
+        smile_y = cy + 30
+        self._draw_glowing_pill(p, QRectF(smile_x, smile_y, smile_w, smile_h), glow_alpha=glow_alpha)
+
+    # ── Orbit idle animation ───────────────────────────────────────────────
+
+    def _draw_orbit_anim(self, p, w, h):
+        cx, cy = w / 2.0, h / 2.0
+        t = self._tick
+
+        # Draw face (subtle)
+        eye_w, eye_h = 46, 28
+        eye_spacing = 82
+        eye_y = cy - eye_h / 2.0 - 16
+        lx = cx - eye_spacing / 2.0 - eye_w / 2.0
+        rx = cx + eye_spacing / 2.0 - eye_w / 2.0
+        self._draw_glowing_pill(p, QRectF(lx, eye_y, eye_w, eye_h), glow_alpha=70)
+        self._draw_glowing_pill(p, QRectF(rx, eye_y, eye_w, eye_h), glow_alpha=70)
+        self._draw_glowing_pill(p, QRectF(cx - 16, cy + 32, 32, 12), glow_alpha=50)
+
+        # Orbit path (subtle ellipse)
+        orb_rx, orb_ry = 80, 50
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
+        p.setPen(QPen(QColor(99, 102, 241, 18), 1.2))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawEllipse(QRectF(cx - orb_rx, cy - orb_ry, orb_rx * 2, orb_ry * 2))
+
+        # Satellite
+        angle = t * 0.035
+        sx = cx + math.cos(angle) * orb_rx
+        sy = cy + math.sin(angle) * orb_ry
+
+        # Glow halo
+        sg = QRadialGradient(sx, sy, 18)
+        sg.setColorAt(0.0, QColor(0, 200, 255, 140))
+        sg.setColorAt(1.0, QColor(0, 0, 0, 0))
+        p.setBrush(sg)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawEllipse(QRectF(sx - 18, sy - 18, 36, 36))
+
+        # Core dot
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+        p.setBrush(QColor(200, 240, 255, 230))
+        p.drawEllipse(QRectF(sx - 4, sy - 4, 8, 8))
+
+        # Trail
+        for i in range(1, 6):
+            ta = angle - i * 0.08
+            tx = cx + math.cos(ta) * orb_rx
+            ty = cy + math.sin(ta) * orb_ry
+            trail_alpha = int(80 * (1 - i / 6))
+            p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
+            tg = QRadialGradient(tx, ty, 5)
+            tg.setColorAt(0, QColor(0, 200, 255, trail_alpha))
+            tg.setColorAt(1, QColor(0, 0, 0, 0))
+            p.setBrush(tg)
+            p.drawEllipse(QRectF(tx - 5, ty - 5, 10, 10))
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+
+    # ── Classic Orb idle ───────────────────────────────────────────────────
+
+    def _draw_orb_idle(self, p, w, h, cx, cy, float_y, look_x, look_y, mouth_w, mouth_h):
+        eye_w = 48
+        eye_h = max(4.0, 76 * self._blink_factor)
+        eye_spacing = 84
+        lx = cx - eye_spacing / 2.0 - eye_w / 2.0 + look_x
+        rx = cx + eye_spacing / 2.0 - eye_w / 2.0 + look_x
+        eye_y = cy - eye_h / 2.0 + float_y + look_y - 16
+        mouth_x = cx - mouth_w / 2.0 + look_x * 1.2
+        mouth_y = cy + 34 + float_y + (mouth_h / 2.0 if self._anim_state == "YAWNING" else 0)
+        yawn_off = mouth_h if self._anim_state == "YAWNING" else 0
         self._draw_glowing_pill(p, QRectF(lx, eye_y, eye_w, eye_h))
         self._draw_glowing_pill(p, QRectF(rx, eye_y, eye_w, eye_h))
         self._draw_glowing_pill(p, QRectF(mouth_x, mouth_y - yawn_off, mouth_w, mouth_h))

@@ -12,6 +12,9 @@ class SettingsWindow(QWidget):
     animation_changed = pyqtSignal(str)     # anim_mode
     spotify_toggled = pyqtSignal(bool)      # enabled
     lock_notch_toggled = pyqtSignal(bool)   # locked
+    config_updated = pyqtSignal(dict)       # general config including models and api key
+    theme_changed = pyqtSignal(str)         # dark / light / neon
+    char_anim_changed = pyqtSignal(str)     # orb / pulse / orbit
 
     def __init__(self, parent=None):
         super().__init__()
@@ -55,9 +58,11 @@ class SettingsWindow(QWidget):
 
         self.btn_gen = self._create_sidebar_btn("General", True)
         self.btn_mod = self._create_sidebar_btn("Models", False)
+        self.btn_cust = self._create_sidebar_btn("Customization", False)
         
         self.sidebar_layout.addWidget(self.btn_gen)
         self.sidebar_layout.addWidget(self.btn_mod)
+        self.sidebar_layout.addWidget(self.btn_cust)
         
         self.sidebar_layout.addStretch()
 
@@ -95,8 +100,10 @@ class SettingsWindow(QWidget):
         self.stack = QStackedWidget()
         self.tab_gen = self._init_general_tab()
         self.tab_mod = self._init_models_tab()
+        self.tab_cust = self._init_customization_tab()
         self.stack.addWidget(self.tab_gen)
         self.stack.addWidget(self.tab_mod)
+        self.stack.addWidget(self.tab_cust)
         self.content_layout.addWidget(self.stack)
 
         # Bottom Bar (Save Button)
@@ -121,6 +128,7 @@ class SettingsWindow(QWidget):
         # Connect Sidebar
         self.btn_gen.clicked.connect(lambda: self._switch_tab(0))
         self.btn_mod.clicked.connect(lambda: self._switch_tab(1))
+        self.btn_cust.clicked.connect(lambda: self._switch_tab(2))
 
     def _create_sidebar_btn(self, text, active):
         btn = QPushButton(text)
@@ -152,11 +160,12 @@ class SettingsWindow(QWidget):
 
     def _switch_tab(self, index):
         self.stack.setCurrentIndex(index)
-        self.lbl_title.setText("General Settings" if index == 0 else "Model Configuration")
-        self._update_sb_btn_style(self.btn_gen, index == 0)
-        self._update_sb_btn_style(self.btn_mod, index == 1)
-        self.btn_gen.setChecked(index == 0)
-        self.btn_mod.setChecked(index == 1)
+        titles = ["General Settings", "Model Configuration", "Customization"]
+        self.lbl_title.setText(titles[index] if index < len(titles) else "Settings")
+        btns = [self.btn_gen, self.btn_mod, self.btn_cust]
+        for i, b in enumerate(btns):
+            self._update_sb_btn_style(b, i == index)
+            b.setChecked(i == index)
 
     def _init_general_tab(self):
         area = QScrollArea()
@@ -282,11 +291,88 @@ class SettingsWindow(QWidget):
         layout.setContentsMargins(0, 0, 15, 0)
         layout.setSpacing(35)
 
-        self.edit_model_res = QLineEdit("minimax/minimax-m2.5:free")
-        self.edit_model_cod = QLineEdit("minimax/minimax-m2.5:free")
+        # API Key
+        self.edit_api_key = QLineEdit()
+        self.edit_api_key.setEchoMode(QLineEdit.EchoMode.Password)
+        self.edit_api_key.setPlaceholderText("sk-or-v1-...")
+        group_api = self._create_section("AUTHENTICATION", [
+            ("OpenRouter API Key", self.edit_api_key),
+        ])
+        layout.addWidget(group_api)
+
+        # Models List
+        models = [
+            ("Ring 2.6 1T (128k, High-performance Reasoning)", "inclusionai/ring-2.6-1t:free"),
+            ("Baidu CoBuddy (32k, General Assistant)", "baidu/cobuddy:free"),
+            ("Nemotron-3 Nano Omni (32k, Reasoning)", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"),
+            ("Laguna M.1 (32k, Coding)", "poolside/laguna-m.1:free"),
+            ("Laguna XS.2 (16k, Fast Coding)", "poolside/laguna-xs.2:free"),
+            ("DeepSeek v4 Flash (128k, Fast / General)", "deepseek/deepseek-v4-flash:free"),
+            ("Gemma-4 26B (32k, Instruct)", "google/gemma-4-26b-a4b-it:free"),
+            ("Gemma-4 31B (32k, Instruct)", "google/gemma-4-31b-it:free"),
+            ("Trinity Large Thinking (128k, Deep Reasoning)", "arcee-ai/trinity-large-thinking:free"),
+            ("Nemotron-3 Super 120B (32k, Advanced Reasoning)", "nvidia/nemotron-3-super-120b-a12b:free"),
+            ("Llama Nemotron Embed VL (128k, Vision/Embeddings)", "nvidia/llama-nemotron-embed-vl-1b-v2:free"),
+            ("MiniMax M2.5 (32k, General)", "minimax/minimax-m2.5:free"),
+            ("LFM 2.5 1.2B Thinking (128k, Fast Reasoning)", "liquid/lfm-2.5-1.2b-thinking:free"),
+            ("LFM 2.5 1.2B Instruct (128k, Fast Instruct)", "liquid/lfm-2.5-1.2b-instruct:free"),
+        ]
+
+        self.models_dict = {id_: text for text, id_ in models}
+
+        self.btn_model_gen = QPushButton("MiniMax M2.5 (32k, General)")
+        self.btn_model_res = QPushButton("MiniMax M2.5 (32k, General)")
+        self.btn_model_cod = QPushButton("MiniMax M2.5 (32k, General)")
+        
+        self.btn_model_gen.model_id = "minimax/minimax-m2.5:free"
+        self.btn_model_res.model_id = "minimax/minimax-m2.5:free"
+        self.btn_model_cod.model_id = "minimax/minimax-m2.5:free"
+
+        for btn in [self.btn_model_gen, self.btn_model_res, self.btn_model_cod]:
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            
+            menu = QMenu(self)
+            menu.setWindowFlags(menu.windowFlags() | Qt.WindowType.FramelessWindowHint | Qt.WindowType.NoDropShadowWindowHint)
+            menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+            
+            from PyQt6.QtGui import QPalette, QColor
+            pal = menu.palette()
+            pal.setColor(QPalette.ColorRole.Window, QColor("#18181b"))
+            pal.setColor(QPalette.ColorRole.Base, QColor("#18181b"))
+            menu.setPalette(pal)
+            
+            menu.setStyleSheet("""
+                QMenu {
+                    background-color: #18181b;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 12px;
+                    padding: 6px;
+                    color: white;
+                }
+                QMenu::item {
+                    padding: 10px 24px;
+                    border-radius: 8px;
+                    margin: 2px 4px;
+                    color: rgba(255, 255, 255, 0.7);
+                }
+                QMenu::item:selected {
+                    background-color: rgba(99, 102, 241, 0.4);
+                    color: white;
+                }
+            """)
+            
+            for text, id_ in models:
+                action = menu.addAction(text)
+                def make_handler(b, t, i):
+                    return lambda checked, bb=b, tt=t, ii=i: (bb.setText(tt), setattr(bb, 'model_id', ii))
+                action.triggered.connect(make_handler(btn, text, id_))
+            
+            btn.setMenu(menu)
+
         group_models = self._create_section("MODELS", [
-            ("Reasoning Model ID", self.edit_model_res),
-            ("Coding Model ID", self.edit_model_cod),
+            ("General Model", self.btn_model_gen),
+            ("Reasoning Model", self.btn_model_res),
+            ("Coding Model", self.btn_model_cod),
         ])
         layout.addWidget(group_models)
 
@@ -393,6 +479,118 @@ class SettingsWindow(QWidget):
     def _set_animation_mode(self, anim):
         self.btn_branding_anim.setText(anim)
 
+    # ── Customization tab init ───────────────────────────────────────────
+
+    def _init_customization_tab(self):
+        from PyQt6.QtWidgets import QScrollArea
+        area = QScrollArea()
+        area.setWidgetResizable(True)
+        area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        area.setStyleSheet("background: transparent; border: none;")
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(0, 0, 15, 0)
+        layout.setSpacing(35)
+
+        # Theme buttons
+        self._selected_theme = "dark"
+        theme_group = self._create_section("THEME", [])
+        theme_inner = QVBoxLayout()
+        theme_inner.setSpacing(10)
+
+        self._theme_btns = {}
+        theme_options = [
+            ("dark",  "Dark",  "Deep black glassmorphic — the default."),
+            ("light", "Light", "Clean white surface with indigo accents."),
+            ("neon",  "Neon",  "Dark purple base with neon green #00ff88 glows."),
+        ]
+        for tid, label, desc in theme_options:
+            row = QHBoxLayout()
+            btn = QPushButton(label)
+            btn.setFixedHeight(38)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setProperty("tid", tid)
+            btn.clicked.connect(lambda _, t=tid: self._select_theme(t))
+            self._theme_btns[tid] = btn
+            desc_lbl = QLabel(desc)
+            desc_lbl.setStyleSheet("color: rgba(255,255,255,0.35); font-size: 10px;")
+            row.addWidget(btn)
+            row.addWidget(desc_lbl)
+            row.addStretch()
+            theme_inner.addLayout(row)
+
+        theme_group.layout().addLayout(theme_inner)
+        layout.addWidget(theme_group)
+        self._refresh_theme_btns()
+
+        # Idle animation buttons
+        self._selected_char_anim = "orb"
+        anim_group = self._create_section("MASH IDLE ANIMATION", [])
+        anim_inner = QVBoxLayout()
+        anim_inner.setSpacing(10)
+
+        self._anim_btns = {}
+        anim_options = [
+            ("orb",   "Orb",   "Classic robot face: blinks, rolls eyes, yawns."),
+            ("pulse", "Pulse", "Eyes breathe in sync with a soft radial ripple."),
+            ("orbit", "Orbit", "A glowing satellite orbits the face slowly."),
+        ]
+        for aid, label, desc in anim_options:
+            row = QHBoxLayout()
+            btn = QPushButton(label)
+            btn.setFixedHeight(38)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setProperty("aid", aid)
+            btn.clicked.connect(lambda _, a=aid: self._select_char_anim(a))
+            self._anim_btns[aid] = btn
+            desc_lbl = QLabel(desc)
+            desc_lbl.setStyleSheet("color: rgba(255,255,255,0.35); font-size: 10px;")
+            row.addWidget(btn)
+            row.addWidget(desc_lbl)
+            row.addStretch()
+            anim_inner.addLayout(row)
+
+        anim_group.layout().addLayout(anim_inner)
+        layout.addWidget(anim_group)
+        self._refresh_anim_btns()
+
+        layout.addStretch()
+        area.setWidget(content)
+        return area
+
+    def _select_theme(self, tid):
+        self._selected_theme = tid
+        self._refresh_theme_btns()
+
+    def _select_char_anim(self, aid):
+        self._selected_char_anim = aid
+        self._refresh_anim_btns()
+
+    _BTN_ACTIVE = """
+        QPushButton {
+            background: rgba(99, 102, 241, 0.35); color: #ffffff;
+            border: 1px solid rgba(99, 102, 241, 0.7);
+            border-radius: 8px; padding: 0 18px; font-size: 11px; font-weight: 700;
+        }
+    """
+    _BTN_INACTIVE = """
+        QPushButton {
+            background: rgba(255, 255, 255, 0.04); color: rgba(255,255,255,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px; padding: 0 18px; font-size: 11px;
+        }
+        QPushButton:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8); }
+    """
+
+    def _refresh_theme_btns(self):
+        for tid, btn in self._theme_btns.items():
+            btn.setStyleSheet(self._BTN_ACTIVE if tid == self._selected_theme else self._BTN_INACTIVE)
+
+    def _refresh_anim_btns(self):
+        for aid, btn in self._anim_btns.items():
+            btn.setStyleSheet(self._BTN_ACTIVE if aid == self._selected_char_anim else self._BTN_INACTIVE)
+
     def _save_and_close(self):
         mode = self.btn_branding_mode.text()
         text = self.edit_branding.text()
@@ -403,6 +601,17 @@ class SettingsWindow(QWidget):
         self.animation_changed.emit(anim)
         self.spotify_toggled.emit(spotify)
         self.lock_notch_toggled.emit(locked)
+        self.theme_changed.emit(getattr(self, "_selected_theme", "dark"))
+        self.char_anim_changed.emit(getattr(self, "_selected_char_anim", "orb"))
+
+        config_data = {
+            "api_key": self.edit_api_key.text(),
+            "model_general": self.btn_model_gen.model_id,
+            "model_reasoning": self.btn_model_res.model_id,
+            "model_coding": self.btn_model_cod.model_id,
+            "system_prompt": self.edit_soul.toPlainText()
+        }
+        self.config_updated.emit(config_data)
 
     def _setup_animation(self):
         self._fx = QGraphicsOpacityEffect(self)
