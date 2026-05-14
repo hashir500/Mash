@@ -10,6 +10,7 @@ from PyQt6.QtGui import QColor, QPainter, QLinearGradient, QPainterPath, QPen, Q
 class SettingsWindow(QWidget):
     branding_changed = pyqtSignal(str, str) # mode, custom_text
     animation_changed = pyqtSignal(str)     # anim_mode
+    spotify_toggled = pyqtSignal(bool)      # enabled
 
     def __init__(self, parent=None):
         super().__init__()
@@ -245,6 +246,14 @@ class SettingsWindow(QWidget):
         ])
         layout.addWidget(group_branding)
 
+        # Media
+        self.check_spotify = QCheckBox("Show Spotify Playback")
+        self.check_spotify.setChecked(False)
+        group_media = self._create_section("MEDIA", [
+            ("", self.check_spotify),
+        ])
+        layout.addWidget(group_media)
+
         self.check_collapse = QCheckBox("Automatically shrink notch when inactive")
         self.check_collapse.setChecked(True)
         group_behavior = self._create_section("BEHAVIOR", [
@@ -382,8 +391,10 @@ class SettingsWindow(QWidget):
         mode = self.btn_branding_mode.text()
         text = self.edit_branding.text()
         anim = self.btn_branding_anim.text()
+        spotify = self.check_spotify.isChecked()
         self.branding_changed.emit(mode, text)
         self.animation_changed.emit(anim)
+        self.spotify_toggled.emit(spotify)
 
     def _setup_animation(self):
         self._fx = QGraphicsOpacityEffect(self)
