@@ -80,20 +80,13 @@ class FloatingPanel(QWidget):
 
         # Background container
         self._bg = QWidget(self)
+        self._bg.setObjectName("panelBackground")
         self._bg.setFixedWidth(PANEL_W)
-        self._bg.setStyleSheet(f"""
-            QWidget {{
-                background: #050505;
-                border: 1px solid rgba(255, 255, 255, 30);
-                border-radius: 28px;
-            }}
-        """)
         bg_layout = QVBoxLayout(self._bg)
         bg_layout.setContentsMargins(8, 8, 8, 8)
         bg_layout.setSpacing(8)
         
         self.chat = ChatWidget()
-        self.chat.setStyleSheet("QWidget { border: none; background: transparent; }")
         self.chat.setVisible(False)
         self.chat.content_size_changed.connect(self._on_chat_size_changed)
 
@@ -109,6 +102,7 @@ class FloatingPanel(QWidget):
         """)
 
         self.input = InputBar()
+        self.input.setObjectName("inputBar")
         self.input.attach_menu(self.slash_menu)
         self.input.slash_changed.connect(self._on_slash_query)
         
@@ -1344,44 +1338,63 @@ class NotchWindow(QWidget):
         self._theme = theme
         THEMES = {
             "dark": {
-                "bg":      "rgba(15, 15, 20, 230)",
+                "bg":      "rgba(10, 10, 15, 245)",
                 "border":  "rgba(255, 255, 255, 0.08)",
                 "text":    "#f8fafc",
                 "accent":  "#6366f1",
                 "input_bg": "rgba(255, 255, 255, 0.04)",
+                "btn_bg":   "rgba(255, 255, 255, 0.05)",
             },
             "light": {
-                "bg":      "rgba(245, 245, 250, 240)",
-                "border":  "rgba(0, 0, 0, 0.10)",
-                "text":    "#111111",
-                "accent":  "#6366f1",
-                "input_bg": "rgba(0, 0, 0, 0.05)",
+                "bg":      "rgba(252, 252, 254, 250)",
+                "border":  "rgba(0, 0, 0, 0.12)",
+                "text":    "#1a1a1b",
+                "accent":  "#4f46e5",
+                "input_bg": "rgba(0, 0, 0, 0.04)",
+                "btn_bg":   "rgba(0, 0, 0, 0.05)",
             },
             "neon": {
-                "bg":      "rgba(10, 5, 25, 240)",
-                "border":  "rgba(0, 255, 136, 0.12)",
+                "bg":      "rgba(8, 4, 18, 250)",
+                "border":  "rgba(0, 255, 136, 0.15)",
                 "text":    "#e0ffe8",
                 "accent":  "#00ff88",
-                "input_bg": "rgba(0, 255, 136, 0.04)",
+                "input_bg": "rgba(0, 255, 136, 0.03)",
+                "btn_bg":   "rgba(0, 255, 136, 0.08)",
             },
         }
         t = THEMES.get(theme, THEMES["dark"])
+        
         qss = f"""
-            QWidget#floatingPanel, QWidget#floatingPanel * {{
-                background: transparent;
-                color: {t['text']};
-            }}
-            QFrame#chatFrame, QFrame#inputFrame {{
+            QWidget#panelBackground {{
                 background: {t['bg']};
                 border: 1px solid {t['border']};
-                border-radius: 18px;
+                border-radius: 28px;
             }}
-            QLineEdit, QTextEdit {{
+            QWidget#panelBackground * {{
+                color: {t['text']};
+            }}
+            QLineEdit {{
                 background: {t['input_bg']};
                 border: 1px solid {t['border']};
-                border-radius: 10px;
+                border-radius: 18px; 
                 color: {t['text']};
-                padding: 8px 14px;
+            }}
+            QLineEdit:focus {{
+                border: 1px solid {t['accent']};
+            }}
+            QPushButton#attachButton, QPushButton#sendButton, QPushButton#modeDropdown {{
+                background: {t['btn_bg']};
+                border: none;
+                color: {t['text']};
+                border-radius: 17px;
+            }}
+            QPushButton#modeDropdown {{
+                background: transparent;
+                border-radius: 15px;
+            }}
+            QPushButton#sendButton {{
+                background: {t['accent']};
+                color: {"#000000" if theme == "neon" else "#ffffff"};
             }}
             QScrollBar:vertical {{ background: transparent; width: 4px; }}
             QScrollBar::handle:vertical {{ background: {t['accent']}; border-radius: 2px; }}

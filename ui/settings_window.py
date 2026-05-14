@@ -562,10 +562,12 @@ class SettingsWindow(QWidget):
     def _select_theme(self, tid):
         self._selected_theme = tid
         self._refresh_theme_btns()
+        self.theme_changed.emit(tid)
 
     def _select_char_anim(self, aid):
         self._selected_char_anim = aid
         self._refresh_anim_btns()
+        self.char_anim_changed.emit(aid)
 
     _BTN_ACTIVE = """
         QPushButton {

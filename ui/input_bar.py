@@ -334,6 +334,7 @@ class InputBar(QWidget):
         layout.setSpacing(8)
 
         self._attach_btn = QPushButton("+")
+        self._attach_btn.setObjectName("attachButton")
         self._attach_btn.setFixedSize(34, 34)
         self._attach_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._attach_btn.clicked.connect(self._toggle_attachment)
@@ -359,28 +360,23 @@ class InputBar(QWidget):
         self._field.textChanged.connect(self._on_text_changed)
         self._field.setStyleSheet("""
             QLineEdit {
-                background: rgba(255, 255, 255, 0.05);
-                border: 1px solid rgba(255, 255, 255, 0.1);
                 border-radius: 18px; 
                 min-height: 36px; 
                 max-height: 36px;
                 padding: 0 16px; 
-                color: #f8fafc;
                 selection-background-color: #6366f1;
-            }
-            QLineEdit:focus {
-                border: 1px solid rgba(99, 102, 241, 0.4);
-                background: rgba(255, 255, 255, 0.08);
             }
         """)
 
         self._btn = QPushButton("↑")
+        self._btn.setObjectName("sendButton")
         self._btn.setFixedSize(34, 34)
         self._btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._btn.clicked.connect(self._send)
         self._btn.setStyleSheet(_BTN_SEND)
 
         self.mode_dropdown = ModeDropdown()
+        self.mode_dropdown.setObjectName("modeDropdown")
 
         layout.addWidget(self._attach_btn)
         layout.addWidget(self._field)
