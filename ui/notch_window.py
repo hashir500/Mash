@@ -1346,12 +1346,12 @@ class NotchWindow(QWidget):
                 "btn_bg":   "rgba(255, 255, 255, 0.05)",
             },
             "light": {
-                "bg":      "rgba(252, 252, 254, 250)",
-                "border":  "rgba(0, 0, 0, 0.12)",
-                "text":    "#1a1a1b",
+                "bg":      "rgba(255, 255, 255, 255)", # Pure white for clarity
+                "border":  "rgba(0, 0, 0, 0.15)",
+                "text":    "#111111",
                 "accent":  "#4f46e5",
-                "input_bg": "rgba(0, 0, 0, 0.04)",
-                "btn_bg":   "rgba(0, 0, 0, 0.05)",
+                "input_bg": "rgba(0, 0, 0, 0.03)",
+                "btn_bg":   "rgba(0, 0, 0, 0.04)",
             },
             "neon": {
                 "bg":      "rgba(8, 4, 18, 250)",
@@ -1364,6 +1364,10 @@ class NotchWindow(QWidget):
         }
         t = THEMES.get(theme, THEMES["dark"])
         
+        # Apply theme to settings window too
+        if hasattr(self, "_settings"):
+            self._settings.apply_theme(theme)
+
         qss = f"""
             QWidget#panelBackground {{
                 background: {t['bg']};
@@ -1382,11 +1386,12 @@ class NotchWindow(QWidget):
             QLineEdit:focus {{
                 border: 1px solid {t['accent']};
             }}
-            QPushButton#attachButton, QPushButton#sendButton, QPushButton#modeDropdown {{
+            QPushButton#attachButton, QPushButton#modeDropdown {{
                 background: {t['btn_bg']};
                 border: none;
-                color: {t['text']};
+                color: {t['text']} !important;
                 border-radius: 17px;
+                font-weight: bold;
             }}
             QPushButton#modeDropdown {{
                 background: transparent;
@@ -1394,7 +1399,9 @@ class NotchWindow(QWidget):
             }}
             QPushButton#sendButton {{
                 background: {t['accent']};
-                color: {"#000000" if theme == "neon" else "#ffffff"};
+                color: {"#000000" if theme == "neon" else "#ffffff"} !important;
+                border: none;
+                border-radius: 17px;
             }}
             QScrollBar:vertical {{ background: transparent; width: 4px; }}
             QScrollBar::handle:vertical {{ background: {t['accent']}; border-radius: 2px; }}

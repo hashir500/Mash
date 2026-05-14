@@ -27,6 +27,13 @@ class SettingsWindow(QWidget):
         self.setFixedSize(680, 580) # Wider for sidebar
         
         self._is_hiding = False
+        self._theme = "dark"
+        self._theme_colors = {
+            "bg_top": QColor(24, 24, 27, 248),
+            "bg_bot": QColor(9, 9, 11, 255),
+            "text": "#ffffff",
+            "subtext": "rgba(255,255,255,0.4)"
+        }
         self._build_ui()
         self._setup_animation()
         self._drag_pos = None
@@ -141,21 +148,21 @@ class SettingsWindow(QWidget):
 
     def _update_sb_btn_style(self, btn, active):
         if active:
-            btn.setStyleSheet("""
-                QPushButton {
-                    background: rgba(255, 255, 255, 0.08); color: #ffffff;
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    background: rgba(128, 128, 128, 0.1); 
                     border: none; border-radius: 8px; text-align: left;
                     padding-left: 12px; font-size: 11px; font-weight: 600;
-                }
+                }}
             """)
         else:
-            btn.setStyleSheet("""
-                QPushButton {
-                    background: transparent; color: rgba(255, 255, 255, 0.4);
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    background: transparent;
                     border: none; border-radius: 8px; text-align: left;
                     padding-left: 12px; font-size: 11px;
-                }
-                QPushButton:hover { background: rgba(255, 255, 255, 0.03); color: rgba(255, 255, 255, 0.6); }
+                }}
+                QPushButton:hover {{ background: rgba(128, 128, 128, 0.05); }}
             """)
 
     def _switch_tab(self, index):
@@ -246,7 +253,8 @@ class SettingsWindow(QWidget):
         custom_vbox.setSpacing(6)
         
         custom_lbl = QLabel("Custom Text")
-        custom_lbl.setStyleSheet("color: rgba(255, 255, 255, 0.6); font-size: 11px; font-weight: 500;")
+        custom_lbl.setObjectName("fieldLabel")
+        custom_lbl.setStyleSheet("font-size: 11px; font-weight: 500;")
         custom_vbox.addWidget(custom_lbl)
         custom_vbox.addWidget(self.edit_branding)
         self.custom_branding_container.setVisible(False)
@@ -393,7 +401,8 @@ class SettingsWindow(QWidget):
         layout.setSpacing(14)
         if title:
             lbl = QLabel(title)
-            lbl.setStyleSheet("color: rgba(255, 255, 255, 0.2); font-weight: 700; font-size: 9px; letter-spacing: 1px;")
+            lbl.setObjectName("sectionHeader")
+            lbl.setStyleSheet("font-weight: 700; font-size: 9px; letter-spacing: 1px;")
             layout.addWidget(lbl)
         for item in fields:
             name, widget = item[0], item[1]
@@ -435,14 +444,13 @@ class SettingsWindow(QWidget):
             f_layout.setSpacing(6)
             if name:
                 f_lbl = QLabel(name)
-                f_lbl.setStyleSheet("color: rgba(255, 255, 255, 0.6); font-size: 11px; font-weight: 500;")
+                f_lbl.setObjectName("fieldLabel")
+                f_lbl.setStyleSheet("font-size: 11px; font-weight: 500;")
                 f_layout.addWidget(f_lbl)
             widget.setStyleSheet("""
                 QLineEdit, QComboBox, QTextEdit, QCheckBox, QPushButton {
-                    background: rgba(255, 255, 255, 0.03);
-                    border: 1px solid rgba(255, 255, 255, 0.06);
                     border-radius: 8px; padding: 12px;
-                    color: white; font-size: 12px;
+                    font-size: 12px;
                     text-align: left;
                 }
                 QPushButton::menu-indicator { image: none; }
@@ -457,15 +465,11 @@ class SettingsWindow(QWidget):
                     image: none;
                     border-left: 4px solid transparent;
                     border-right: 4px solid transparent;
-                    border-top: 4px solid rgba(255, 255, 255, 0.5);
+                    border-top: 4px solid rgba(128, 128, 128, 0.5);
                     margin-right: 12px;
                     margin-top: 2px;
                 }
                 QCheckBox { border: none; background: transparent; padding: 0; }
-                QLineEdit:focus, QTextEdit:focus, QComboBox:focus { 
-                    border: 1px solid rgba(99, 102, 241, 0.3); 
-                    background: rgba(255, 255, 255, 0.05); 
-                }
             """)
             if isinstance(widget, QTextEdit): widget.setFixedHeight(120)
             f_layout.addWidget(widget)
@@ -593,6 +597,118 @@ class SettingsWindow(QWidget):
         for aid, btn in self._anim_btns.items():
             btn.setStyleSheet(self._BTN_ACTIVE if aid == self._selected_char_anim else self._BTN_INACTIVE)
 
+    def apply_theme(self, theme: str):
+        self._theme = theme
+        THEMES = {
+            "dark": {
+                "bg_top":  QColor(24, 24, 27, 248),
+                "bg_bot":  QColor(9, 9, 11, 255),
+                "text":    "#ffffff",
+                "subtext": "rgba(255, 255, 255, 0.4)",
+                "sb_bg":   "rgba(255, 255, 255, 0.02)",
+            },
+            "light": {
+                "bg_top":  QColor(255, 255, 255, 255),
+                "bg_bot":  QColor(255, 255, 255, 255),
+                "text":    "#000000",
+                "subtext": "rgba(0, 0, 0, 0.2)",
+                "sb_bg":   "rgba(0, 0, 0, 0.02)",
+            },
+            "neon": {
+                "bg_top":  QColor(12, 6, 28, 248),
+                "bg_bot":  QColor(8, 4, 18, 255),
+                "text":    "#e0ffe8",
+                "subtext": "rgba(0, 255, 136, 0.3)",
+                "sb_bg":   "rgba(0, 255, 136, 0.02)",
+            },
+        }
+        t = THEMES.get(theme, THEMES["dark"])
+        self._theme_colors = t
+        
+        # Update sidebar and container
+        self._BTN_ACTIVE = f"""
+            QPushButton {{
+                background: {"rgba(0, 0, 0, 0.08)" if theme == "light" else "rgba(255, 255, 255, 0.08)"};
+                border: 1px solid {t['subtext']};
+                color: {t['text']};
+                border-radius: 8px;
+                text-align: left;
+                padding-left: 15px;
+                font-family: 'Inter';
+                font-size: 13px;
+                font-weight: 500;
+            }}
+        """
+        self._BTN_INACTIVE = f"""
+            QPushButton {{
+                background: transparent;
+                border: none;
+                color: {t['subtext']};
+                border-radius: 8px;
+                text-align: left;
+                padding-left: 15px;
+                font-family: 'Inter';
+                font-size: 13px;
+            }}
+            QPushButton:hover {{
+                background: rgba(255, 255, 255, 0.03);
+                color: {t['text']};
+            }}
+        """
+        
+        self.container.setStyleSheet(f"background: {t['bg_top'].name()}; border-radius: 20px;")
+        self.sidebar.setStyleSheet(f"""
+            QFrame {{ 
+                background: {t['sb_bg']}; 
+                border-right: 1px solid {t['subtext']};
+                border-top-left-radius: 20px;
+                border-bottom-left-radius: 20px;
+            }}
+            QLabel {{ color: {t['text']}; }}
+        """)
+        
+        # Update stack and its children
+        self.stack.setStyleSheet(f"""
+            QWidget {{ background: transparent; color: {t['text']} !important; }}
+            QLabel {{ color: {t['text']} !important; }}
+            QLabel#sectionHeader {{ 
+                color: {t['subtext']} !important; 
+                font-weight: 700; 
+                font-size: 9px; 
+                text-transform: uppercase;
+            }}
+            QLabel#fieldLabel {{ 
+                color: {t['text']} !important; 
+                font-size: 11px; 
+                font-weight: 500;
+            }}
+            QLineEdit, QTextEdit, QComboBox {{
+                background: rgba(0, 0, 0, 0.03) if "{theme}" == "light" else rgba(255, 255, 255, 0.05);
+                border: 1px solid {t['subtext']};
+                color: {t['text']} !important;
+                border-radius: 8px;
+                padding: 5px;
+            }}
+            QCheckBox {{
+                color: {t['text']} !important;
+                background: transparent;
+            }}
+            QPushButton {{
+                background: rgba(0, 0, 0, 0.03) if "{theme}" == "light" else rgba(255, 255, 255, 0.05);
+                border: 1px solid {t['subtext']};
+                color: {t['text']} !important;
+                border-radius: 8px;
+                padding: 8px;
+            }}
+        """)
+        self.lbl_title.setStyleSheet(f"color: {t['text']}; font-size: 18px; font-weight: bold;")
+        
+        # Refresh buttons style
+        self._refresh_theme_btns()
+        self._refresh_anim_btns()
+        self._switch_tab(self.stack.currentIndex())
+        self.update()
+
     def _save_and_close(self):
         mode = self.btn_branding_mode.text()
         text = self.edit_branding.text()
@@ -661,14 +777,16 @@ class SettingsWindow(QWidget):
         p.setBrush(QColor(0, 0, 0, 100))
         p.drawPath(path.translated(0, 8))
         bg = QLinearGradient(0, 0, 0, self.height())
-        bg.setColorAt(0, QColor(24, 24, 27, 248))
-        bg.setColorAt(1, QColor(9, 9, 11, 255))
+        bg.setColorAt(0, self._theme_colors["bg_top"])
+        bg.setColorAt(1, self._theme_colors["bg_bot"])
         p.fillPath(path, bg)
         inner_glow = QPainterPath()
         inner_glow.addRoundedRect(rect.adjusted(0.8, 0.8, -0.8, -0.8), 20, 20)
-        p.setPen(QPen(QColor(255, 255, 255, 30), 1))
+        glow_color = QColor(255, 255, 255, 30) if self._theme != "light" else QColor(0, 0, 0, 20)
+        p.setPen(QPen(glow_color, 1))
         p.drawPath(inner_glow)
-        p.setPen(QPen(QColor(255, 255, 255, 12), 1.0))
+        border_color = QColor(255, 255, 255, 12) if self._theme != "light" else QColor(0, 0, 0, 30)
+        p.setPen(QPen(border_color, 1.0))
         p.drawPath(path)
 
     def mousePressEvent(self, event):

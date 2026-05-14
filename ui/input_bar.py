@@ -217,14 +217,9 @@ class ModeDropdown(QPushButton):
         self.setStyleSheet("""
             QPushButton {
                 background: transparent;
-                color: rgba(255, 255, 255, 0.45);
                 border: none;
                 border-radius: 15px;
                 font-size: 18px;
-            }
-            QPushButton:hover {
-                background: rgba(255, 255, 255, 0.08);
-                color: rgba(255, 255, 255, 0.95);
             }
         """)
         
@@ -340,16 +335,10 @@ class InputBar(QWidget):
         self._attach_btn.clicked.connect(self._toggle_attachment)
         self._attach_btn.setStyleSheet("""
             QPushButton {
-                background: rgba(255, 255, 255, 0.05); 
                 border: none; 
                 border-radius: 17px;
-                color: rgba(255, 255, 255, 0.6); 
                 font-size: 18px; 
                 font-weight: 500;
-            }
-            QPushButton:hover { 
-                background: rgba(255, 255, 255, 0.1); 
-                color: #ffffff;
             }
         """)
 
