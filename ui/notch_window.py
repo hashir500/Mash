@@ -13,6 +13,7 @@ import psutil
 from datetime import datetime
 from enum import Enum, auto
 import random
+from pynput import keyboard
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QApplication,
@@ -31,6 +32,7 @@ from ui.character_widget import CharacterWidget
 from ui.chat_widget import ChatWidget
 from ui.input_bar import InputBar, SlashMenu
 from ui.settings_window import SettingsWindow
+from ui.tasks_window import TasksWindow
 from ai.openrouter import StreamWorker
 from ai.agentic_worker import AgenticCodingWorker
 from PyQt6.QtSvg import QSvgRenderer
@@ -199,8 +201,23 @@ class _CommandRunner(QThread):
             self.proc.wait()
             self.done.emit(self.proc.returncode)
         except Exception as e:
-            self.output_line.emit(f"❌ Failed: {e}\n")
-            self.done.emit(1)
+            logger.error(f"CommandRunner error: {e}")
+
+class GlobalHotkeyListener(QThread):
+    """Listens for global hotkeys using pynput."""
+    task_shortcut = pyqtSignal()
+    
+    def run(self):
+        try:
+            # Shift + 1 is usually mapped to '!' or just '<shift>+1'
+            # We listen for both to be safe across different keyboard layouts
+            with keyboard.GlobalHotKeys({
+                '<shift>+1': self.task_shortcut.emit,
+                '!': self.task_shortcut.emit
+            }) as h:
+                h.join()
+        except Exception as e:
+            logger.error(f"GlobalHotkeyListener error: {e}")
 
 
 class NotchWindow(QWidget):
@@ -257,11 +274,18 @@ class NotchWindow(QWidget):
         self._settings.theme_changed.connect(self._apply_theme)
         self._settings.char_anim_changed.connect(self._update_char_anim)
         
+        self._tasks_window = TasksWindow(self)
+        
         # Load UI Config
         self._branding_mode = "MASH"
         self._branding_custom = "MASH"
         self._branding_text = "MASH"
         self._anim_mode = "None"
+        
+        # Start Global Hotkey Listener
+        self._hotkey_thread = GlobalHotkeyListener(self)
+        self._hotkey_thread.task_shortcut.connect(self._on_task_shortcut)
+        self._hotkey_thread.start()
         
         # Animation state
         self._anim_timer = QTimer(self)
@@ -750,6 +774,16 @@ class NotchWindow(QWidget):
                     self._panel.chat.finalize_assistant_message()
                 return
 
+            if text_lower.startswith("add a task ") or text_lower.startswith("set a task "):
+                task_txt = text[11:].strip()
+                self._tasks_window.add_task(task_txt)
+                self._panel.chat.start_assistant_message()
+                self._panel.chat.append_token(f"✅ Task added to your list: **{task_txt}**")
+                self._panel.chat.finalize_assistant_message()
+                self._char.set_thinking(False)
+                self._panel.input.set_enabled(True)
+                return
+
             if any(kw in text_lower for kw in _switch_keywords):
                 query = text_lower
                 for kw in _switch_keywords:
@@ -821,6 +855,8 @@ class NotchWindow(QWidget):
                     f"You are Mash, a premium minimalist AI assistant. "
                     f"You are currently running on the {model_name} model in {mode} mode. "
                     f"When asked which model you are, always state '{model_name}'. "
+                    f"You can also manage user tasks. To add a task for the user, simply include "
+                    f"`[TASK: description]` in your response. "
                     f"Be concise, sharp, and helpful."
                 )
             }
@@ -919,6 +955,18 @@ class NotchWindow(QWidget):
         if self._char._is_thinking:
             self._char.set_thinking(False)
             self._char.set_writing(True)
+            
+        # Detect [TASK: ...] pattern in the stream
+        msg_so_far = self._panel.chat.current_message_text()
+        if "[TASK:" in msg_so_far and "]" in msg_so_far:
+            parts = msg_so_far.split("[TASK:")
+            for part in parts[1:]:
+                if "]" in part:
+                    task_text = part.split("]")[0].strip()
+                    if not hasattr(self, "_current_stream_tasks"): self._current_stream_tasks = set()
+                    if task_text not in self._current_stream_tasks:
+                        self._tasks_window.add_task(task_text)
+                        self._current_stream_tasks.add(task_text)
 
     def _on_reasoning(self, text: str):
         self._panel.chat.append_reasoning(text)
@@ -934,6 +982,7 @@ class NotchWindow(QWidget):
         self._panel.input.set_enabled(True)
         self._char.set_thinking(False)
         self._char.set_writing(False)
+        self._current_stream_tasks = set()
         self._worker = None
 
     def _clear_history(self):
@@ -1069,6 +1118,20 @@ class NotchWindow(QWidget):
                 self.collapse()
                 QTimer.singleShot(350, lambda: self._settings.show_animated(self.geometry().center()))
         super().keyPressEvent(event)
+
+    def _on_task_shortcut(self):
+        """Triggered by GlobalHotkeyListener."""
+        if not self._tasks_window.isVisible():
+            if self._state == State.COLLAPSED:
+                self.expand()
+            # Wait for expansion if needed
+            delay = 350 if self._state == State.COLLAPSED else 0
+            QTimer.singleShot(delay, lambda: self._tasks_window.show_animated(self.geometry().center()))
+        else:
+            self._tasks_window.hide_animated()
+            
+        self._tasks_window.raise_()
+        self._tasks_window.activateWindow()
 
     def _on_anim_tick(self):
         if self._spotify_enabled:
@@ -1481,9 +1544,11 @@ class NotchWindow(QWidget):
         }
         t = THEMES.get(theme, THEMES["dark"])
         
-        # Apply theme to settings window too
+        # Apply theme to settings and tasks windows
         if hasattr(self, "_settings"):
             self._settings.apply_theme(theme)
+        if hasattr(self, "_tasks_window"):
+            self._tasks_window.apply_theme(theme)
 
         qss = f"""
             QWidget#panelBackground {{

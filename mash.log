@@ -147,3 +147,105 @@ AttributeError: 'SettingsWindow' object has no attribute '_TAB_BTN_ACTIVE'. Did 
 2026-05-14 22:16:51 - mash - INFO - Starting Mash 2.0...
 2026-05-14 22:16:51 - mash - INFO - Starting Mash 2.0...
 2026-05-14 22:16:51,313 - mash - INFO - Starting Mash 2.0...
+2026-05-14 22:22:04 - mash - INFO - Starting Mash 2.0...
+2026-05-14 22:22:04 - mash - INFO - Starting Mash 2.0...
+2026-05-14 22:22:04,158 - mash - INFO - Starting Mash 2.0...
+2026-05-14 22:23:29 - mash - INFO - StreamWorker starting: model=deepseek/deepseek-v4-flash:free, has_key=True
+Error loading tasks: name 'os' is not defined
+2026-05-14 22:23:29 - mash - INFO - StreamWorker starting: model=deepseek/deepseek-v4-flash:free, has_key=True
+2026-05-14 22:23:29,259 - mash - INFO - StreamWorker starting: model=deepseek/deepseek-v4-flash:free, has_key=True
+2026-05-14 22:23:34,789 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-14 22:23:34 - mash - INFO - OpenRouter response: 200 for model=deepseek/deepseek-v4-flash:free
+2026-05-14 22:23:34 - mash - INFO - OpenRouter response: 200 for model=deepseek/deepseek-v4-flash:free
+2026-05-14 22:23:34,789 - mash - INFO - OpenRouter response: 200 for model=deepseek/deepseek-v4-flash:free
+2026-05-14 22:23:38 - mash - DEBUG - StreamWorker finished
+2026-05-14 22:23:38,212 - mash - DEBUG - StreamWorker finished
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ui/notch_window.py", line 936, in _on_token
+    msg_so_far = self._panel.chat.current_message_text()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ChatWidget' object has no attribute 'current_message_text'
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ui/notch_window.py", line 936, in _on_token
+    msg_so_far = self._panel.chat.current_message_text()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ChatWidget' object has no attribute 'current_message_text'
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ui/notch_window.py", line 936, in _on_token
+    msg_so_far = self._panel.chat.current_message_text()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ChatWidget' object has no attribute 'current_message_text'
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ui/notch_window.py", line 936, in _on_token
+    msg_so_far = self._panel.chat.current_message_text()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ChatWidget' object has no attribute 'current_message_text'
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ui/notch_window.py", line 936, in _on_token
+    msg_so_far = self._panel.chat.current_message_text()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ChatWidget' object has no attribute 'current_message_text'
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ui/notch_window.py", line 936, in _on_token
+    msg_so_far = self._panel.chat.current_message_text()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ChatWidget' object has no attribute 'current_message_text'
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ui/notch_window.py", line 936, in _on_token
+    msg_so_far = self._panel.chat.current_message_text()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ChatWidget' object has no attribute 'current_message_text'
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ui/notch_window.py", line 936, in _on_token
+    msg_so_far = self._panel.chat.current_message_text()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ChatWidget' object has no attribute 'current_message_text'
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ui/notch_window.py", line 936, in _on_token
+    msg_so_far = self._panel.chat.current_message_text()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ChatWidget' object has no attribute 'current_message_text'
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ui/notch_window.py", line 936, in _on_token
+    msg_so_far = self._panel.chat.current_message_text()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ChatWidget' object has no attribute 'current_message_text'
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ui/notch_window.py", line 936, in _on_token
+    msg_so_far = self._panel.chat.current_message_text()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ChatWidget' object has no attribute 'current_message_text'
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ui/notch_window.py", line 936, in _on_token
+    msg_so_far = self._panel.chat.current_message_text()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ChatWidget' object has no attribute 'current_message_text'
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ui/notch_window.py", line 936, in _on_token
+    msg_so_far = self._panel.chat.current_message_text()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ChatWidget' object has no attribute 'current_message_text'
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ui/notch_window.py", line 936, in _on_token
+    msg_so_far = self._panel.chat.current_message_text()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ChatWidget' object has no attribute 'current_message_text'
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ui/notch_window.py", line 936, in _on_token
+    msg_so_far = self._panel.chat.current_message_text()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ChatWidget' object has no attribute 'current_message_text'
+Traceback (most recent call last):
+  File "/home/hashir/Documents/mash/ui/notch_window.py", line 936, in _on_token
+    msg_so_far = self._panel.chat.current_message_text()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ChatWidget' object has no attribute 'current_message_text'
+2026-05-14 22:26:51 - mash - INFO - Starting Mash 2.0...
+2026-05-14 22:26:51 - mash - INFO - Starting Mash 2.0...
+2026-05-14 22:26:51,051 - mash - INFO - Starting Mash 2.0...
+2026-05-14 22:31:19 - mash - INFO - Starting Mash 2.0...
+2026-05-14 22:31:19 - mash - INFO - Starting Mash 2.0...
+2026-05-14 22:31:19,742 - mash - INFO - Starting Mash 2.0...
+2026-05-14 22:36:39 - mash - INFO - Starting Mash 2.0...
+2026-05-14 22:36:39 - mash - INFO - Starting Mash 2.0...
+2026-05-14 22:36:39,833 - mash - INFO - Starting Mash 2.0...
