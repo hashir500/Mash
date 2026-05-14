@@ -28,6 +28,8 @@ class SettingsWindow(QWidget):
         
         self._is_hiding = False
         self._theme = "dark"
+        self._TAB_BTN_ACTIVE = ""
+        self._TAB_BTN_INACTIVE = ""
         self._theme_colors = {
             "bg_top": QColor(24, 24, 27, 248),
             "bg_bot": QColor(9, 9, 11, 255),
@@ -507,19 +509,18 @@ class SettingsWindow(QWidget):
         theme_options = [
             ("dark",  "Dark",  "Deep black glassmorphic — the default."),
             ("light", "Light", "Clean white surface with indigo accents."),
-            ("neon",  "Neon",  "Dark purple base with neon green #00ff88 glows."),
         ]
         for tid, label, desc in theme_options:
             row = QHBoxLayout()
             btn = QPushButton(label)
-            btn.setFixedHeight(38)
+            btn.setFixedSize(90, 36)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setProperty("tid", tid)
             btn.clicked.connect(lambda _, t=tid: self._select_theme(t))
             self._theme_btns[tid] = btn
             desc_lbl = QLabel(desc)
-            desc_lbl.setStyleSheet("color: rgba(255,255,255,0.35); font-size: 10px;")
             row.addWidget(btn)
+            row.addSpacing(15)
             row.addWidget(desc_lbl)
             row.addStretch()
             theme_inner.addLayout(row)
@@ -543,14 +544,14 @@ class SettingsWindow(QWidget):
         for aid, label, desc in anim_options:
             row = QHBoxLayout()
             btn = QPushButton(label)
-            btn.setFixedHeight(38)
+            btn.setFixedSize(90, 36)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setProperty("aid", aid)
             btn.clicked.connect(lambda _, a=aid: self._select_char_anim(a))
             self._anim_btns[aid] = btn
             desc_lbl = QLabel(desc)
-            desc_lbl.setStyleSheet("color: rgba(255,255,255,0.35); font-size: 10px;")
             row.addWidget(btn)
+            row.addSpacing(15)
             row.addWidget(desc_lbl)
             row.addStretch()
             anim_inner.addLayout(row)
@@ -591,11 +592,11 @@ class SettingsWindow(QWidget):
 
     def _refresh_theme_btns(self):
         for tid, btn in self._theme_btns.items():
-            btn.setStyleSheet(self._BTN_ACTIVE if tid == self._selected_theme else self._BTN_INACTIVE)
+            btn.setStyleSheet(self._TAB_BTN_ACTIVE if tid == self._selected_theme else self._TAB_BTN_INACTIVE)
 
     def _refresh_anim_btns(self):
         for aid, btn in self._anim_btns.items():
-            btn.setStyleSheet(self._BTN_ACTIVE if aid == self._selected_char_anim else self._BTN_INACTIVE)
+            btn.setStyleSheet(self._TAB_BTN_ACTIVE if aid == self._selected_char_anim else self._TAB_BTN_INACTIVE)
 
     def apply_theme(self, theme: str):
         self._theme = theme
@@ -606,6 +607,7 @@ class SettingsWindow(QWidget):
                 "text":    "#ffffff",
                 "subtext": "rgba(255, 255, 255, 0.4)",
                 "sb_bg":   "rgba(255, 255, 255, 0.02)",
+                "accent":  "#6366f1",
             },
             "light": {
                 "bg_top":  QColor(255, 255, 255, 255),
@@ -613,17 +615,35 @@ class SettingsWindow(QWidget):
                 "text":    "#000000",
                 "subtext": "rgba(0, 0, 0, 0.2)",
                 "sb_bg":   "rgba(0, 0, 0, 0.02)",
-            },
-            "neon": {
-                "bg_top":  QColor(12, 6, 28, 248),
-                "bg_bot":  QColor(8, 4, 18, 255),
-                "text":    "#e0ffe8",
-                "subtext": "rgba(0, 255, 136, 0.3)",
-                "sb_bg":   "rgba(0, 255, 136, 0.02)",
+                "accent":  "#4f46e5",
             },
         }
         t = THEMES.get(theme, THEMES["dark"])
         self._theme_colors = t
+        
+        # Style for the Customization tab buttons (fixed size, centered text)
+        self._TAB_BTN_ACTIVE = f"""
+            QPushButton {{
+                background: {t['accent']};
+                color: #ffffff;
+                border: none;
+                border-radius: 10px;
+                font-weight: bold;
+                font-size: 12px;
+            }}
+        """
+        self._TAB_BTN_INACTIVE = f"""
+            QPushButton {{
+                background: rgba(128, 128, 128, 0.1);
+                color: {t['text']};
+                border: 1px solid {t['subtext']};
+                border-radius: 10px;
+                font-size: 12px;
+            }}
+            QPushButton:hover {{
+                background: rgba(128, 128, 128, 0.15);
+            }}
+        """
         
         # Update sidebar and container
         self._BTN_ACTIVE = f"""

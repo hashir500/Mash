@@ -1353,14 +1353,6 @@ class NotchWindow(QWidget):
                 "input_bg": "rgba(0, 0, 0, 0.03)",
                 "btn_bg":   "rgba(0, 0, 0, 0.04)",
             },
-            "neon": {
-                "bg":      "rgba(8, 4, 18, 250)",
-                "border":  "rgba(0, 255, 136, 0.15)",
-                "text":    "#e0ffe8",
-                "accent":  "#00ff88",
-                "input_bg": "rgba(0, 255, 136, 0.03)",
-                "btn_bg":   "rgba(0, 255, 136, 0.08)",
-            },
         }
         t = THEMES.get(theme, THEMES["dark"])
         
