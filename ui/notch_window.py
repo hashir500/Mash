@@ -33,6 +33,7 @@ from ui.chat_widget import ChatWidget
 from ui.input_bar import InputBar, SlashMenu
 from ui.settings_window import SettingsWindow
 from ui.tasks_window import TasksWindow
+from ui.screentime_window import ScreenTimeWindow
 from ai.openrouter import StreamWorker
 from ai.agentic_worker import AgenticCodingWorker
 from PyQt6.QtSvg import QSvgRenderer
@@ -206,6 +207,7 @@ class _CommandRunner(QThread):
 class GlobalHotkeyListener(QThread):
     """Listens for global hotkeys using pynput."""
     task_shortcut = pyqtSignal()
+    screentime_shortcut = pyqtSignal()
     
     def run(self):
         try:
@@ -213,7 +215,9 @@ class GlobalHotkeyListener(QThread):
             # We listen for both to be safe across different keyboard layouts
             with keyboard.GlobalHotKeys({
                 '<shift>+1': self.task_shortcut.emit,
-                '!': self.task_shortcut.emit
+                '!': self.task_shortcut.emit,
+                '<shift>+2': self.screentime_shortcut.emit,
+                '@': self.screentime_shortcut.emit
             }) as h:
                 h.join()
         except Exception as e:
@@ -275,6 +279,7 @@ class NotchWindow(QWidget):
         self._settings.char_anim_changed.connect(self._update_char_anim)
         
         self._tasks_window = TasksWindow(self)
+        self._screentime_window = ScreenTimeWindow(self)
         
         # Load UI Config
         self._branding_mode = "MASH"
@@ -285,6 +290,7 @@ class NotchWindow(QWidget):
         # Start Global Hotkey Listener
         self._hotkey_thread = GlobalHotkeyListener(self)
         self._hotkey_thread.task_shortcut.connect(self._on_task_shortcut)
+        self._hotkey_thread.screentime_shortcut.connect(self._on_screentime_shortcut)
         self._hotkey_thread.start()
         
         # Animation state
@@ -1171,6 +1177,19 @@ class NotchWindow(QWidget):
             
         self._tasks_window.raise_()
         self._tasks_window.activateWindow()
+
+    def _on_screentime_shortcut(self):
+        """Triggered by GlobalHotkeyListener."""
+        if not self._screentime_window.isVisible():
+            if self._state == State.COLLAPSED:
+                self.expand()
+            delay = 350 if self._state == State.COLLAPSED else 0
+            QTimer.singleShot(delay, lambda: self._screentime_window.show_animated())
+        else:
+            self._screentime_window.hide()
+            
+        self._screentime_window.raise_()
+        self._screentime_window.activateWindow()
 
     def _on_anim_tick(self):
         if self._spotify_enabled:
