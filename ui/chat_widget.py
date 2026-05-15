@@ -23,6 +23,10 @@ except ImportError:
 CODE_STORE = {}
 
 def _md_to_html(text: str) -> str:
+    # Strip [TASK: ...] and [COMPLETE: ...] tags from visible output
+    text = re.sub(r'\[TASK:.*?\]', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\[COMPLETE:.*?\]', '', text, flags=re.IGNORECASE)
+    
     try:
         # Use fenced_code and tables
         html = markdown.markdown(text, extensions=['tables', 'fenced_code', 'nl2br'])
@@ -529,6 +533,11 @@ class ChatWidget(QWidget):
             self._current_bubble.show_export_button()
         self._current_bubble = None
         self._update_size()
+
+    def current_message_text(self):
+        if self._current_bubble:
+            return self._current_bubble._text
+        return ""
 
     def _update_size(self):
         content_w = self._container.sizeHint().width()

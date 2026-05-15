@@ -379,6 +379,39 @@ class TasksWindow(QWidget):
                 item.theme = t
                 item._update_style()
 
+    def get_tasks_summary(self):
+        if not self._tasks_data:
+            return "No tasks in the list."
+        return "\n".join([f"- {t['text']} ({'Done' if t['done'] else 'Pending'})" for t in self._tasks_data])
+
+    def complete_task(self, name):
+        name_lower = name.lower().strip()
+        # Try exact match first, then fallback to contains
+        matched_task = None
+        matched_widget = None
+
+        for task in self._tasks_data:
+            if task['text'].lower().strip() == name_lower:
+                matched_task = task
+                break
+        if not matched_task:
+            for task in self._tasks_data:
+                if name_lower in task['text'].lower() or task['text'].lower() in name_lower:
+                    matched_task = task
+                    break
+
+        if matched_task:
+            matched_task['done'] = True
+            self._save_tasks()
+            task_text_lower = matched_task['text'].lower().strip()
+            for j in range(self.list_layout.count()):
+                widget = self.list_layout.itemAt(j).widget()
+                if isinstance(widget, TaskItem) and widget.title_label.text().lower().strip() == task_text_lower:
+                    widget.check.setChecked(True)
+                    break
+            return True
+        return False
+
     def _add_task_from_input(self):
         text = self.task_input.text().strip()
         desc = self.desc_input.text().strip()

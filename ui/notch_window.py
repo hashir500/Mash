@@ -849,15 +849,29 @@ class NotchWindow(QWidget):
         else:
             history = self._histories[mode]
             model_name = model_id.split("/")[-1].replace(":free", "")
+            
+            # Get task list for AI context
+            tasks_context = self._tasks_window.get_tasks_summary()
+            
             system_msg = {
                 "role": "system",
                 "content": (
-                    f"You are Mash, a premium minimalist AI assistant. "
-                    f"You are currently running on the {model_name} model in {mode} mode. "
-                    f"When asked which model you are, always state '{model_name}'. "
-                    f"You can also manage user tasks. To add a task for the user, simply include "
-                    f"`[TASK: description]` in your response. "
-                    f"Be concise, sharp, and helpful."
+                    "You are Mash, a premium minimalist AI assistant. "
+                    "Respond with elegance and precision. "
+                    f"You are running on {model_name} in {mode} mode.\n\n"
+                    f"CURRENT TASKS:\n{tasks_context}\n\n"
+                    "TASK CONTROL — use these tags in your response to update the task list:\n"
+                    "  ADD a task    →  [TASK: the task text here]\n"
+                    "  COMPLETE one  →  [COMPLETE: exact task name]\n\n"
+                    "STRICT RULES:\n"
+                    "1. ONLY output your message to the user plus any needed tags.\n"
+                    "2. NO reasoning, thinking-out-loud, or meta-commentary in your response.\n"
+                    "3. DO NOT use placeholder words like 'description' as a tag value.\n\n"
+                    "EXAMPLE:\n"
+                    "  User: Add a task to prepare slides\n"
+                    "  Response: Done! Prepare slides is on your list. [TASK: prepare slides]\n\n"
+                    "  User: Mark the meeting as done\n"
+                    "  Response: Meeting marked as complete! [COMPLETE: Mash team meeting]"
                 )
             }
             messages = [system_msg] + list(history)
@@ -950,23 +964,44 @@ class NotchWindow(QWidget):
         if not success:
             logger.error(f"Nanobot failed: {last_output}")
 
+    def _process_task_tags(self, text: str):
+        """Scan text for [TASK:] and [COMPLETE:] tags and act on them.
+        Strips thinking blocks first to avoid processing reasoning content."""
+        # Strip <think>...</think> blocks (Claude Thinking models embed reasoning in content)
+        clean = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL | re.IGNORECASE)
+        # Also strip opening/unclosed <think> blocks (when stream is cut mid-think)
+        clean = re.sub(r'<think>.*', '', clean, flags=re.DOTALL | re.IGNORECASE)
+
+        # Task Addition
+        task_matches = re.findall(r'\[TASK:\s*(.*?)\]', clean, re.IGNORECASE)
+        for task_text in task_matches:
+            task_text = task_text.strip()
+            # Skip placeholder/generic values
+            if task_text.lower() in ('description', 'task name', 'the task text here', ''):
+                continue
+            if not hasattr(self, "_current_stream_tasks"): self._current_stream_tasks = set()
+            if task_text.lower() not in {t.lower() for t in self._current_stream_tasks}:
+                self._tasks_window.add_task(task_text)
+                self._current_stream_tasks.add(task_text)
+                logger.info(f"AI added task: {task_text}")
+
+        # Task Completion
+        complete_matches = re.findall(r'\[COMPLETE:\s*(.*?)\]', clean, re.IGNORECASE)
+        for task_name in complete_matches:
+            task_name = task_name.strip()
+            if task_name.lower() in ('task name', 'exact task name', ''):
+                continue
+            if not hasattr(self, "_current_stream_completed"): self._current_stream_completed = set()
+            if task_name.lower() not in {t.lower() for t in self._current_stream_completed}:
+                if self._tasks_window.complete_task(task_name):
+                    self._current_stream_completed.add(task_name)
+                    logger.info(f"AI marked task as complete: {task_name}")
+
     def _on_token(self, token: str):
         self._panel.chat.append_token(token)
         if self._char._is_thinking:
             self._char.set_thinking(False)
             self._char.set_writing(True)
-            
-        # Detect [TASK: ...] pattern in the stream
-        msg_so_far = self._panel.chat.current_message_text()
-        if "[TASK:" in msg_so_far and "]" in msg_so_far:
-            parts = msg_so_far.split("[TASK:")
-            for part in parts[1:]:
-                if "]" in part:
-                    task_text = part.split("]")[0].strip()
-                    if not hasattr(self, "_current_stream_tasks"): self._current_stream_tasks = set()
-                    if task_text not in self._current_stream_tasks:
-                        self._tasks_window.add_task(task_text)
-                        self._current_stream_tasks.add(task_text)
 
     def _on_reasoning(self, text: str):
         self._panel.chat.append_reasoning(text)
@@ -975,6 +1010,9 @@ class NotchWindow(QWidget):
         if self._panel.chat._current_bubble:
             final_text = self._panel.chat._current_bubble._text
             if final_text:
+                logger.info(f"AI final response raw: {repr(final_text[:300])}")
+                # Final pass: process any tags that may have been missed during streaming
+                self._process_task_tags(final_text)
                 mode = self._panel.input.mode_dropdown._current_mode
                 self._histories[mode].append({"role": "assistant", "content": final_text})
         self._panel.chat.finalize_assistant_message()
@@ -983,6 +1021,7 @@ class NotchWindow(QWidget):
         self._char.set_thinking(False)
         self._char.set_writing(False)
         self._current_stream_tasks = set()
+        self._current_stream_completed = set()
         self._worker = None
 
     def _clear_history(self):
