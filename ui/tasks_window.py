@@ -3,10 +3,18 @@ import json
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QLineEdit, QPushButton, QFrame, QGraphicsOpacityEffect,
-    QScrollArea, QCheckBox, QTextEdit
+    QScrollArea, QCheckBox, QTextEdit, QDateTimeEdit, QCalendarWidget
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QPropertyAnimation, QEasingCurve, QRect, QRectF, QPoint
-from PyQt6.QtGui import QColor, QPainter, QLinearGradient, QPainterPath, QPen, QFont
+from PyQt6.QtCore import Qt, pyqtSignal, QPropertyAnimation, QEasingCurve, QRect, QRectF, QPoint, QDateTime, QObject, QEvent
+from PyQt6.QtGui import QColor, QPainter, QLinearGradient, QPainterPath, QPen, QFont, QRegion
+
+class CalendarFilter(QObject):
+    def eventFilter(self, obj, event):
+        if event.type() in [QEvent.Type.Show, QEvent.Type.Resize]:
+            path = QPainterPath()
+            path.addRoundedRect(QRectF(obj.rect()), 16, 16)
+            obj.setMask(QRegion(path.toFillPolygon().toPolygon()))
+        return super().eventFilter(obj, event)
 
 class TaskItem(QFrame):
     toggled = pyqtSignal(bool)
@@ -54,7 +62,7 @@ class TaskItem(QFrame):
         
         # Bottom Row: Deadline
         if deadline:
-            self.dead_label = QLabel(f"⏰ {deadline}")
+            self.dead_label = QLabel(deadline)
             self.dead_label.setStyleSheet(f"color: {self.theme['accent']}; font-size: 10px; font-weight: 600; margin-left: 32px;")
             self.layout.addWidget(self.dead_label)
             
@@ -80,6 +88,20 @@ class TaskItem(QFrame):
                 background: rgba(128, 128, 128, 0.08);
                 border: 1px solid rgba(255,255,255,0.1);
             }}
+            QCheckBox::indicator {{
+                width: 18px;
+                height: 18px;
+                border: 2px solid {self.theme['subtext']};
+                border-radius: 5px;
+                background: transparent;
+            }}
+            QCheckBox::indicator:checked {{
+                background-color: {self.theme['accent']};
+                border-color: {self.theme['accent']};
+            }}
+            QCheckBox::indicator:hover {{
+                border-color: {self.theme['accent']};
+            }}
         """)
 
 class TasksWindow(QWidget):
@@ -104,6 +126,7 @@ class TasksWindow(QWidget):
         }
         
         self._build_ui()
+        self.apply_theme(self._theme) # Initialize styling
         self._setup_animation()
         self._drag_pos = None
 
@@ -164,9 +187,11 @@ class TasksWindow(QWidget):
         self.desc_input.setPlaceholderText("Description...")
         self.desc_input.setStyleSheet("background: rgba(255,255,255,0.05); border-radius: 8px; padding: 5px 10px; color: rgba(255,255,255,0.6); font-size: 11px;")
         
-        self.dead_input = QLineEdit()
-        self.dead_input.setPlaceholderText("Deadline (e.g. Tomorrow 10am)")
-        self.dead_input.setStyleSheet("background: rgba(255,255,255,0.05); border-radius: 8px; padding: 5px 10px; color: rgba(255,255,255,0.6); font-size: 11px;")
+        self.dead_input = QDateTimeEdit(QDateTime.currentDateTime())
+        self.dead_input.setCalendarPopup(True)
+        self.dead_input.setDisplayFormat("MMM d, h:mm AP")
+        self.dead_input.setMinimumDateTime(QDateTime.currentDateTime())
+        self.dead_input.setObjectName("deadInput")
         
         details_row.addWidget(self.desc_input, 3)
         details_row.addWidget(self.dead_input, 2)
@@ -253,6 +278,99 @@ class TasksWindow(QWidget):
                 border-radius: 28px;
             }}
         """)
+
+        # Style for QDateTimeEdit and its internal buttons
+        dt_style = f"""
+            QDateTimeEdit {{
+                background: rgba(255,255,255,0.05);
+                border-radius: 8px;
+                padding: 5px 5px;
+                color: {t['text']};
+                font-size: 10px;
+            }}
+            QDateTimeEdit::drop-down {{
+                border: none;
+                width: 22px;
+                background: rgba(255,255,255,0.03);
+                border-top-right-radius: 8px;
+                border-bottom-right-radius: 8px;
+            }}
+            QDateTimeEdit::down-arrow {{
+                border: none;
+                width: 8px;
+                height: 8px;
+            }}
+        """
+        self.dead_input.setStyleSheet(dt_style)
+        
+        # Comprehensive Calendar Widget styling
+        calendar = self.dead_input.calendarWidget()
+        calendar.setGridVisible(False)
+        calendar.setVerticalHeaderFormat(calendar.VerticalHeaderFormat.NoVerticalHeader)
+        
+        cal_qss = f"""
+            QCalendarWidget {{
+                background-color: {t['bg_bot'].name()};
+                border: 1px solid {t['subtext']};
+                border-radius: 15px;
+            }}
+            QCalendarWidget QWidget#qt_calendar_navigationbar {{
+                background-color: {t['bg_top'].name()};
+                border-top-left-radius: 15px;
+                border-top-right-radius: 15px;
+            }}
+            QCalendarWidget QToolButton {{
+                color: {t['text']};
+                background-color: transparent;
+                border: none;
+                font-weight: bold;
+                font-size: 11px;
+                padding: 4px;
+            }}
+            QCalendarWidget QToolButton:hover {{
+                background-color: rgba(255, 255, 255, 0.05);
+                border-radius: 4px;
+            }}
+            QCalendarWidget QAbstractItemView {{
+                background-color: {t['bg_bot'].name()};
+                selection-background-color: {t['accent']};
+                selection-color: white;
+                color: {t['text']};
+                outline: none;
+                border-bottom-left-radius: 15px;
+                border-bottom-right-radius: 15px;
+            }}
+            QCalendarWidget QHeaderView {{
+                background-color: {t['bg_bot'].name()};
+                color: {t['subtext']};
+            }}
+            /* Specific fix for the white header area */
+            QCalendarWidget QWidget {{
+                alternate-background-color: {t['bg_bot'].name()};
+                border-radius: 15px;
+            }}
+            #qt_calendar_prevmonth {{ qproperty-text: "<"; }}
+            #qt_calendar_nextmonth {{ qproperty-text: ">"; }}
+        """
+        calendar.setStyleSheet(cal_qss)
+        calendar.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        
+        # Install the rounding filter
+        if not hasattr(self, "_cal_filter"):
+            self._cal_filter = CalendarFilter(self)
+            calendar.installEventFilter(self._cal_filter)
+        
+        # Manually force some colors on internal components that QSS sometimes misses
+        from PyQt6.QtGui import QTextCharFormat
+        fmt = QTextCharFormat()
+        fmt.setForeground(QColor(t['text']))
+        calendar.setHeaderTextFormat(fmt)
+        
+        # Weekend colors
+        wk_fmt = QTextCharFormat()
+        wk_fmt.setForeground(QColor(t['accent']))
+        calendar.setWeekdayTextFormat(Qt.DayOfWeek.Saturday, wk_fmt)
+        calendar.setWeekdayTextFormat(Qt.DayOfWeek.Sunday, wk_fmt)
         
         # Update existing items
         for i in range(self.list_layout.count()):
@@ -264,12 +382,13 @@ class TasksWindow(QWidget):
     def _add_task_from_input(self):
         text = self.task_input.text().strip()
         desc = self.desc_input.text().strip()
-        dead = self.dead_input.text().strip()
+        # Only add deadline if it's in the future (simple heuristic)
+        dead = self.dead_input.dateTime().toString("MMM d, h:mm AP")
         if text:
             self.add_task(text, description=desc, deadline=dead)
             self.task_input.clear()
             self.desc_input.clear()
-            self.dead_input.clear()
+            self.dead_input.setDateTime(QDateTime.currentDateTime())
 
     def add_task(self, text, done=False, description="", deadline=""):
         task_obj = {"text": text, "done": done, "description": description, "deadline": deadline}
