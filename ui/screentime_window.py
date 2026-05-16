@@ -1,4 +1,5 @@
 import os
+import datetime
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QPushButton, QFrame, QGraphicsColorizeEffect, QSizePolicy, QGridLayout,
@@ -6,10 +7,11 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QPropertyAnimation, QEasingCurve, QRect, QRectF, QPoint
 from PyQt6.QtGui import QIcon, QColor, QFont, QPainter, QLinearGradient, QPainterPath, QPen
-import datetime
 from screentime_tracker import tracker
 
 class HeatmapCell(QPushButton):
+    clicked_date = pyqtSignal(str)
+
     def __init__(self, date_str, total_minutes, focused_minutes, parent=None):
         super().__init__(parent)
         self.date_str = date_str
@@ -18,6 +20,11 @@ class HeatmapCell(QPushButton):
         self.hover_info_callback = None
         self.setCursor(Qt.CursorShape.PointingHandCursor)
     
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked_date.emit(self.date_str)
+        super().mousePressEvent(event)
+
     def enterEvent(self, event):
         if self.hover_info_callback:
             self.hover_info_callback(self.date_str, self.total_minutes, self.focused_minutes)
@@ -172,23 +179,25 @@ class ScreenTimeWindow(QWidget):
         self.content_layout.setSpacing(25)
         
         # 1. Heatmap (Full Width)
-        heatmap = self.create_heatmap()
-        self.content_layout.addWidget(heatmap)
+        self.heatmap_container = self.create_heatmap()
+        self.content_layout.addWidget(self.heatmap_container)
         
-        # 2. Stats Row (Focused Time + Top Apps)
-        stats_row = QHBoxLayout()
-        stats_row.setSpacing(25)
+        # 2. Stats Row (Total Time + Focused Time + Top Apps)
+        self.stats_row_layout = QHBoxLayout()
+        self.stats_row_layout.setSpacing(25)
         
-        focused_time_card = self.create_focused_time_card()
-        top_apps_card = self.create_top_apps_card()
+        self.total_time_card = self.create_total_time_card()
+        self.focused_time_card = self.create_focused_time_card()
+        self.top_apps_card = self.create_top_apps_card()
         
-        stats_row.addWidget(focused_time_card, 1)
-        stats_row.addWidget(top_apps_card, 1)
-        self.content_layout.addLayout(stats_row)
+        self.stats_row_layout.addWidget(self.total_time_card, 1)
+        self.stats_row_layout.addWidget(self.focused_time_card, 1)
+        self.stats_row_layout.addWidget(self.top_apps_card, 2) # Give more space to top apps
+        self.content_layout.addLayout(self.stats_row_layout)
         
-        # 3. Today Activity (Full Width)
-        timeline = self.create_timeline()
-        self.content_layout.addWidget(timeline)
+        # 3. Activity Timeline (Full Width)
+        self.timeline_container = self.create_timeline()
+        self.content_layout.addWidget(self.timeline_container)
         
         scroll.setWidget(content_widget)
         self.main_layout.addWidget(scroll)
@@ -196,16 +205,151 @@ class ScreenTimeWindow(QWidget):
         layout.addWidget(self.main_frame)
         
         self._apply_theme_styles()
+        self.refresh_ui() # Load real data
         
     def _apply_theme_styles(self):
         self.setStyleSheet("""
             QFrame#mainFrame {
-                background: rgba(18, 18, 24, 235);
+                background: rgba(18, 18, 24, 245);
                 border: 1px solid rgba(255, 255, 255, 0.12);
                 border-radius: 45px;
             }
             QLabel { color: white; background: transparent; }
         """)
+
+    def refresh_ui(self, date_key=None):
+        """Update the UI with real data from tracker for a specific date"""
+        if not date_key:
+            date_key = tracker.get_date_key()
+            self.subtitle_label.setText("Your digital footprint today")
+        else:
+            try:
+                d_obj = datetime.datetime.strptime(date_key, "%Y-%m-%d")
+                self.subtitle_label.setText(f"Activity for {d_obj.strftime('%B %d, %Y')}")
+            except:
+                self.subtitle_label.setText(f"Activity for {date_key}")
+
+        # 1. Update Stats
+        stats = tracker.data["daily_data"].get(date_key, {"focused_minutes": 0, "total_minutes": 0})
+        self.focused_time_label.setText(tracker.format_minutes(stats.get("focused_minutes", 0)))
+        self.total_time_label.setText(tracker.format_minutes(stats.get("total_minutes", 0)))
+        
+        # 2. Update Top Apps
+        top_apps = tracker.get_top_apps(date_key)
+        # Clear existing apps in the grid
+        for i in reversed(range(self.top_apps_grid.count())): 
+            item = self.top_apps_grid.itemAt(i)
+            if item.widget(): item.widget().setParent(None)
+            else: self.top_apps_grid.removeItem(item)
+        
+        icon_map = {
+            "VS Code": "assets/laptop.svg",
+            "Code": "assets/laptop.svg",
+            "Chrome": "assets/globe.svg",
+            "Browser": "assets/globe.svg",
+            "Firefox": "assets/globe.svg",
+            "Slack": "assets/coffee.svg",
+            "Spotify": "assets/coffee.svg",
+            "Terminal": "assets/terminal.svg",
+            "bash": "assets/terminal.svg",
+            "python": "assets/terminal.svg"
+        }
+        
+        for name, mins in top_apps:
+            app_box = QWidget()
+            app_box_l = QVBoxLayout(app_box)
+            app_box_l.setContentsMargins(0,0,0,0)
+            app_box_l.setSpacing(8)
+            app_box_l.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            app = QFrame()
+            app.setFixedSize(70, 70)
+            app.setStyleSheet("background: rgba(255,255,255,0.06); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);")
+            app_inner_l = QVBoxLayout(app)
+            app_inner_l.setContentsMargins(0,0,0,0)
+            app_inner_l.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            
+            display_name = name[:10] + ".." if len(name) > 10 else name
+            icon_path = icon_map.get(name, "assets/laptop.svg")
+            
+            icon = QLabel()
+            icon.setFixedSize(28, 28)
+            icon.setPixmap(QIcon(icon_path).pixmap(28, 28))
+            colorize = QGraphicsColorizeEffect()
+            colorize.setColor(QColor(255,255,255, 220))
+            icon.setGraphicsEffect(colorize)
+            app_inner_l.addWidget(icon)
+            
+            name_label = QLabel(display_name)
+            name_label.setStyleSheet("color: rgba(255,255,255,0.5); font-size: 11px; font-weight: 600;")
+            name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            
+            app_box_l.addWidget(app)
+            app_box_l.addWidget(name_label)
+            self.top_apps_grid.addWidget(app_box)
+
+        # 3. Update Timeline
+        # Clear existing activities properly
+        while self.timeline_layout.count() > 1: # Keep the header
+            item = self.timeline_layout.takeAt(1)
+            if item.widget():
+                item.widget().deleteLater()
+            elif item.layout():
+                # Recursively clear sub-layouts
+                def clear_layout(layout):
+                    while layout.count():
+                        child = layout.takeAt(0)
+                        if child.widget():
+                            child.widget().deleteLater()
+                        elif child.layout():
+                            clear_layout(child.layout())
+                clear_layout(item.layout())
+
+        activities = tracker.get_activities_for_day(date_key, limit=5)
+        if not activities:
+            empty = QLabel("No recorded activity for this day")
+            empty.setStyleSheet("color: rgba(255,255,255,0.2); font-style: italic; padding: 20px;")
+            empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.timeline_layout.addWidget(empty)
+        
+        for act in activities:
+            row = QHBoxLayout()
+            row.setSpacing(20)
+            
+            icon_box = QFrame()
+            icon_box.setFixedSize(44, 44)
+            icon_box.setStyleSheet("background: rgba(255,255,255,0.05); border-radius: 14px; border: none;")
+            icon_box_l = QVBoxLayout(icon_box)
+            icon_box_l.setContentsMargins(0,0,0,0)
+            icon_box_l.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            
+            icon_path = act.get("icon", "assets/laptop.svg")
+            icon = QLabel()
+            icon.setFixedSize(20, 20)
+            icon.setPixmap(QIcon(icon_path).pixmap(20, 20))
+            colorize = QGraphicsColorizeEffect()
+            colorize.setColor(QColor(255,255,255, 180))
+            icon.setGraphicsEffect(colorize)
+            icon_box_l.addWidget(icon)
+            
+            txt_l = QVBoxLayout()
+            txt_l.setSpacing(2)
+            t = QLabel(act["title"])
+            t.setFont(QFont("Inter", 14, QFont.Weight.Bold))
+            t.setStyleSheet("color: white; border: none;")
+            s = QLabel(act["subtitle"])
+            s.setStyleSheet("color: rgba(255,255,255,0.4); font-size: 12px; border: none;")
+            txt_l.addWidget(t)
+            txt_l.addWidget(s)
+            
+            tm = QLabel(act.get("duration", ""))
+            tm.setStyleSheet("color: rgba(255,255,255,0.2); font-size: 12px; font-weight: bold; border: none;")
+            
+            row.addWidget(icon_box)
+            row.addLayout(txt_l)
+            row.addStretch()
+            row.addWidget(tm)
+            self.timeline_layout.addLayout(row)
 
     def create_heatmap(self):
         frame = QFrame()
@@ -245,7 +389,6 @@ class ScreenTimeWindow(QWidget):
         
         row1 = QHBoxLayout()
         row1.setSpacing(0)
-        
         row2 = QHBoxLayout()
         row2.setSpacing(0)
         
@@ -291,8 +434,9 @@ class ScreenTimeWindow(QWidget):
                         break
                 
                 cell = HeatmapCell(date_str, 0, 0)
-                cell.setFixedSize(16, 16) # Slightly larger cells for the larger window
+                cell.setFixedSize(16, 16)
                 cell.hover_info_callback = self.update_hover_info
+                cell.clicked_date.connect(self.refresh_ui)
                 cell.setStyleSheet(f"background: {colors[level]}; border-radius: 4px; border: none;")
                 grid.addWidget(cell, row, col)
                 
@@ -327,6 +471,34 @@ class ScreenTimeWindow(QWidget):
         else:
             self.hover_info_label.setText(" ")
 
+    def create_total_time_card(self):
+        card = QFrame()
+        card.setStyleSheet("""
+            QFrame {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgba(255, 255, 255, 0.08), stop:1 rgba(255, 255, 255, 0.03));
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 32px;
+            }
+        """)
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(30, 30, 30, 30)
+        card_layout.setSpacing(8)
+        
+        label = QLabel("TOTAL SCREEN TIME")
+        label.setStyleSheet("color: rgba(255,255,255,0.4); font-size: 11px; font-weight: 800; border: none;")
+        
+        self.total_time_label = QLabel("0h")
+        self.total_time_label.setFont(QFont("Outfit", 36, QFont.Weight.Bold))
+        self.total_time_label.setStyleSheet("color: white; border: none;")
+        
+        sub = QLabel("Across all devices")
+        sub.setStyleSheet("color: rgba(255,255,255,0.3); font-size: 12px;")
+        
+        card_layout.addWidget(label)
+        card_layout.addWidget(self.total_time_label)
+        card_layout.addWidget(sub)
+        return card
+
     def create_focused_time_card(self):
         card = QFrame()
         card.setStyleSheet("""
@@ -343,15 +515,15 @@ class ScreenTimeWindow(QWidget):
         label = QLabel("FOCUSED TIME")
         label.setStyleSheet("color: #39d353; font-size: 11px; font-weight: 800; border: none;")
         
-        time = QLabel("5h 42m")
-        time.setFont(QFont("Outfit", 36, QFont.Weight.Bold))
-        time.setStyleSheet("color: white; border: none;")
+        self.focused_time_label = QLabel("0h")
+        self.focused_time_label.setFont(QFont("Outfit", 36, QFont.Weight.Bold))
+        self.focused_time_label.setStyleSheet("color: white; border: none;")
         
         sub = QLabel("+12% from yesterday")
         sub.setStyleSheet("color: rgba(255,255,255,0.3); font-size: 12px;")
         
         card_layout.addWidget(label)
-        card_layout.addWidget(time)
+        card_layout.addWidget(self.focused_time_label)
         card_layout.addWidget(sub)
         return card
 
@@ -372,37 +544,11 @@ class ScreenTimeWindow(QWidget):
         h.setStyleSheet("color: rgba(255,255,255,0.4); font-size: 11px; font-weight: 800; border: none;")
         apps_layout.addWidget(h)
         
-        grid_row = QHBoxLayout()
-        grid_row.setSpacing(15)
+        self.top_apps_grid = QHBoxLayout()
+        self.top_apps_grid.setSpacing(15)
+        self.top_apps_grid.addStretch() # Initial stretch
         
-        apps = [
-            ("VS Code", "assets/laptop.svg"),
-            ("Chrome", "assets/globe.svg"),
-            ("Slack", "assets/coffee.svg"),
-            ("Spotify", "assets/coffee.svg")
-        ]
-        
-        for name, icon_path in apps:
-            app = QFrame()
-            app.setFixedSize(65, 65)
-            app.setStyleSheet("background: rgba(255,255,255,0.06); border-radius: 18px; border: none;")
-            app_l = QVBoxLayout(app)
-            app_l.setContentsMargins(0,0,0,0)
-            app_l.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            
-            icon = QLabel()
-            icon.setFixedSize(26, 26)
-            icon.setPixmap(QIcon(icon_path).pixmap(26, 26))
-            icon.setScaledContents(True)
-            colorize = QGraphicsColorizeEffect()
-            colorize.setColor(QColor(255,255,255, 200))
-            icon.setGraphicsEffect(colorize)
-            
-            app_l.addWidget(icon)
-            grid_row.addWidget(app)
-        
-        grid_row.addStretch()
-        apps_layout.addLayout(grid_row)
+        apps_layout.addLayout(self.top_apps_grid)
         return card
 
     def create_timeline(self):
@@ -414,60 +560,15 @@ class ScreenTimeWindow(QWidget):
                 border-radius: 32px;
             }
         """)
-        layout = QVBoxLayout(frame)
-        layout.setContentsMargins(30, 30, 30, 30)
-        layout.setSpacing(25)
+        self.timeline_layout = QVBoxLayout(frame)
+        self.timeline_layout.setContentsMargins(30, 30, 30, 30)
+        self.timeline_layout.setSpacing(25)
         
-        h = QLabel("TODAY ACTIVITY")
-        h.setFont(QFont("Inter", 11, QFont.Weight.Bold))
-        h.setStyleSheet("color: rgba(255,255,255,0.4); border: none;")
-        layout.addWidget(h)
+        self.timeline_header = QLabel("ACTIVITY")
+        self.timeline_header.setFont(QFont("Inter", 11, QFont.Weight.Bold))
+        self.timeline_header.setStyleSheet("color: rgba(255,255,255,0.4); border: none;")
+        self.timeline_layout.addWidget(self.timeline_header)
         
-        activities = [
-            ("VS Code", "Coding Mash UI - Enhancing layouts", "09:15 AM", "assets/laptop.svg"),
-            ("Browser", "Searching PyQt6 Animation Docs", "10:45 AM", "assets/globe.svg"),
-            ("Terminal", "Git push - Automated commit", "03:45 PM", "assets/terminal.svg")
-        ]
-        
-        for title, sub, time, icon_path in activities:
-            row = QHBoxLayout()
-            row.setSpacing(20)
-            
-            icon_box = QFrame()
-            icon_box.setFixedSize(44, 44)
-            icon_box.setStyleSheet("background: rgba(255,255,255,0.05); border-radius: 14px; border: none;")
-            icon_box_l = QVBoxLayout(icon_box)
-            icon_box_l.setContentsMargins(0,0,0,0)
-            icon_box_l.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            
-            icon = QLabel()
-            icon.setFixedSize(20, 20)
-            icon.setPixmap(QIcon(icon_path).pixmap(20, 20))
-            colorize = QGraphicsColorizeEffect()
-            colorize.setColor(QColor(255,255,255, 180))
-            icon.setGraphicsEffect(colorize)
-            icon_box_l.addWidget(icon)
-            
-            txt_l = QVBoxLayout()
-            txt_l.setSpacing(2)
-            t = QLabel(title)
-            t.setFont(QFont("Inter", 14, QFont.Weight.Bold))
-            t.setStyleSheet("color: white; border: none;")
-            s = QLabel(sub)
-            s.setStyleSheet("color: rgba(255,255,255,0.4); font-size: 12px; border: none;")
-            txt_l.addWidget(t)
-            txt_l.addWidget(s)
-            
-            tm = QLabel(time)
-            tm.setStyleSheet("color: rgba(255,255,255,0.2); font-size: 12px; font-weight: bold; border: none;")
-            
-            row.addWidget(icon_box)
-            row.addLayout(txt_l)
-            row.addStretch()
-            row.addWidget(tm)
-            
-            layout.addLayout(row)
-            
         return frame
 
     # ── Mouse Events for Draggability ─────────────────────────────────────────

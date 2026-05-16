@@ -1,0 +1,883 @@
+{
+  "daily_data": {
+    "2026-05-15": {
+      "total_minutes": 360,
+      "focused_minutes": 36,
+      "date": "2026-05-15"
+    },
+    "2026-05-14": {
+      "total_minutes": 851,
+      "focused_minutes": 27,
+      "date": "2026-05-14"
+    },
+    "2026-05-13": {
+      "total_minutes": 328,
+      "focused_minutes": 7,
+      "date": "2026-05-13"
+    },
+    "2026-05-12": {
+      "total_minutes": 531,
+      "focused_minutes": 6,
+      "date": "2026-05-12"
+    },
+    "2026-05-11": {
+      "total_minutes": 389,
+      "focused_minutes": 1,
+      "date": "2026-05-11"
+    },
+    "2026-05-10": {
+      "total_minutes": 764,
+      "focused_minutes": 7,
+      "date": "2026-05-10"
+    },
+    "2026-05-09": {
+      "total_minutes": 733,
+      "focused_minutes": 20,
+      "date": "2026-05-09"
+    }
+  },
+  "app_usage": {
+    "2026-05-15": {
+      "Antigravity": 156,
+      "Chrome": 11,
+      "Mash": 36,
+      "Chromium": 153,
+      "Unknown": 1
+    },
+    "2026-05-14": {
+      "Unknown": 170,
+      "Antigravity": 324,
+      "Mash": 27,
+      "Chrome": 38,
+      "Spotify": 6,
+      "Chromium": 276,
+      "Files": 1,
+      "Libreoffice-calc": 1,
+      "Terminal": 3
+    },
+    "2026-05-13": {
+      "Unknown": 57,
+      "Mash": 7,
+      "Chrome": 6,
+      "Antigravity": 52,
+      "Chromium": 201,
+      "Libreoffice-writer": 3
+    },
+    "2026-05-12": {
+      "Unknown": 32,
+      "Mash": 6,
+      "Chromium": 437,
+      "Chrome": 26,
+      "Antigravity": 5,
+      "Files": 1,
+      "Libreoffice-writer": 11,
+      "Rars-launch": 9
+    },
+    "2026-05-11": {
+      "Unknown": 49,
+      "Terminal": 8,
+      "Chromium": 195,
+      "Xdg-desktop-portal-gnome": 1,
+      "Chrome": 36,
+      "Rars-launch": 55,
+      "Files": 1,
+      "Libreoffice-writer": 32,
+      "Antigravity": 4,
+      "Mash": 1
+    },
+    "2026-05-10": {
+      "Unknown": 38,
+      "Chrome": 14,
+      "Chromium": 543,
+      "VS Code": 1,
+      "Mash": 6,
+      "Files": 4,
+      "Org.gnome.texteditor": 1,
+      "Libreoffice-impress": 14,
+      "Libreoffice-writer": 18,
+      "Terminal": 8,
+      "Antigravity": 111
+    },
+    "2026-05-09": {
+      "Chromium": 546,
+      "Unknown": 62,
+      "Chrome": 1,
+      "Org.gnome.settings": 2,
+      "Libreoffice-draw": 2,
+      "Files": 1,
+      "Python3": 10,
+      "Windsurf": 60,
+      "Cursor": 21,
+      "Snap-store": 1,
+      "VS Code": 11,
+      "Mash": 9
+    }
+  },
+  "activity_timeline": [
+    {
+      "title": "Chromium",
+      "subtitle": "Cobra Kai | StreameX - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:47 PM",
+      "duration": "5m",
+      "date": "2026-05-09"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "New Tab - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:53 PM",
+      "duration": "9s",
+      "date": "2026-05-09"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "First PC Building Experience - YouTube - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:01 PM",
+      "duration": "10m",
+      "date": "2026-05-10"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:12 PM",
+      "duration": "4s",
+      "date": "2026-05-10"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "First PC Building Experience - YouTube - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:12 PM",
+      "duration": "52s",
+      "date": "2026-05-10"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:13 PM",
+      "duration": "3s",
+      "date": "2026-05-10"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "First PC Building Experience - YouTube - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:13 PM",
+      "duration": "2m",
+      "date": "2026-05-10"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:16 PM",
+      "duration": "0s",
+      "date": "2026-05-10"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:16 PM",
+      "duration": "2s",
+      "date": "2026-05-10"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "The Fastest Computer I've Ever Had - YouTube - Chr...",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:53 PM",
+      "duration": "3m",
+      "date": "2026-05-11"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "Practical Deep Learning for Coders - 2: Deployment...",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:56 PM",
+      "duration": "2s",
+      "date": "2026-05-11"
+    },
+    {
+      "title": "Terminal",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:56 PM",
+      "duration": "1s",
+      "date": "2026-05-11"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:57 PM",
+      "duration": "4s",
+      "date": "2026-05-11"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "Devil May Cry | StreameX - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:26 PM",
+      "duration": "9m",
+      "date": "2026-05-12"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:35 PM",
+      "duration": "13s",
+      "date": "2026-05-12"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "Devil May Cry | StreameX - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:36 PM",
+      "duration": "9s",
+      "date": "2026-05-12"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:36 PM",
+      "duration": "3s",
+      "date": "2026-05-12"
+    },
+    {
+      "title": "Mash",
+      "subtitle": "Mash",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:36 PM",
+      "duration": "5s",
+      "date": "2026-05-12"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:36 PM",
+      "duration": "6s",
+      "date": "2026-05-12"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:04 PM",
+      "duration": "0s",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:04 PM",
+      "duration": "1s",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "System-crash-notification",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:04 PM",
+      "duration": "0s",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:04 PM",
+      "duration": "9s",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Mash",
+      "subtitle": "Mash",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:05 PM",
+      "duration": "1s",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:05 PM",
+      "duration": "2s",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Mash",
+      "subtitle": "Mash",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:05 PM",
+      "duration": "3s",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:05 PM",
+      "duration": "1s",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Apport-gtk",
+      "subtitle": "Problem in antigravity",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:05 PM",
+      "duration": "1s",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:05 PM",
+      "duration": "7s",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Mash",
+      "subtitle": "Mash",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:31 PM",
+      "duration": "27s",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Antigravity",
+      "subtitle": "mash - Antigravity - Review Changes",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:31 PM",
+      "duration": "1m",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:33 PM",
+      "duration": "1s",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Mash",
+      "subtitle": "Mash",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:33 PM",
+      "duration": "0s",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:33 PM",
+      "duration": "2m",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Antigravity",
+      "subtitle": "mash - Antigravity - Review Changes",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:36 PM",
+      "duration": "2m",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Mash",
+      "subtitle": "Mash",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:38 PM",
+      "duration": "24s",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:38 PM",
+      "duration": "1s",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Antigravity",
+      "subtitle": "mash - Antigravity - Review Changes",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:38 PM",
+      "duration": "18s",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:38 PM",
+      "duration": "5m",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Mash",
+      "subtitle": "Mash",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:33 AM",
+      "duration": "11s",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Antigravity",
+      "subtitle": "mash - Antigravity - Review Changes",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:33 AM",
+      "duration": "1m",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:34 AM",
+      "duration": "1s",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Mash",
+      "subtitle": "Mash",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:34 AM",
+      "duration": "0s",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:34 AM",
+      "duration": "1m",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Antigravity",
+      "subtitle": "mash - Antigravity - Review Changes",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:36 AM",
+      "duration": "13s",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:36 AM",
+      "duration": "1m",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Antigravity",
+      "subtitle": "mash - Antigravity - Review Changes",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:38 AM",
+      "duration": "9s",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "Cobra Kai | StreameX - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:47 PM",
+      "date": "2026-05-09"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "New Tab - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:53 PM",
+      "date": "2026-05-09"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "First PC Building Experience - YouTube - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:01 PM",
+      "date": "2026-05-10"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:12 PM",
+      "date": "2026-05-10"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "First PC Building Experience - YouTube - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:12 PM",
+      "date": "2026-05-10"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:13 PM",
+      "date": "2026-05-10"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "First PC Building Experience - YouTube - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:13 PM",
+      "date": "2026-05-10"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:16 PM",
+      "date": "2026-05-10"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:16 PM",
+      "date": "2026-05-10"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "The Fastest Computer I've Ever Had - YouTube - Chr...",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:53 PM",
+      "date": "2026-05-11"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "Practical Deep Learning for Coders - 2: Deployment...",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:56 PM",
+      "date": "2026-05-11"
+    },
+    {
+      "title": "Terminal",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:56 PM",
+      "date": "2026-05-11"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:57 PM",
+      "date": "2026-05-11"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "Devil May Cry | StreameX - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:26 PM",
+      "date": "2026-05-12"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:35 PM",
+      "date": "2026-05-12"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "Devil May Cry | StreameX - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:36 PM",
+      "date": "2026-05-12"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:36 PM",
+      "date": "2026-05-12"
+    },
+    {
+      "title": "Mash",
+      "subtitle": "Mash",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:36 PM",
+      "date": "2026-05-12"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:36 PM",
+      "date": "2026-05-12"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:04 PM",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:04 PM",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "System-crash-notification",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:04 PM",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:04 PM",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Mash",
+      "subtitle": "Mash",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:05 PM",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:05 PM",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Mash",
+      "subtitle": "Mash",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:05 PM",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:05 PM",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Apport-gtk",
+      "subtitle": "Problem in antigravity",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:05 PM",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:05 PM",
+      "date": "2026-05-13"
+    },
+    {
+      "title": "Mash",
+      "subtitle": "Mash",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:31 PM",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Antigravity",
+      "subtitle": "mash - Antigravity - Review Changes",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:31 PM",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:33 PM",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Mash",
+      "subtitle": "Mash",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:33 PM",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:33 PM",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Antigravity",
+      "subtitle": "mash - Antigravity - Review Changes",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:36 PM",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Mash",
+      "subtitle": "Mash",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:38 PM",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:38 PM",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Antigravity",
+      "subtitle": "mash - Antigravity - Review Changes",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:38 PM",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Unknown",
+      "subtitle": "",
+      "icon": "assets/laptop.svg",
+      "timestamp": "05:38 PM",
+      "date": "2026-05-14"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:30 AM",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "Meet \u2013 nzq-vbeb-hfg - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:30 AM",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Mash",
+      "subtitle": "Mash",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:30 AM",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Antigravity",
+      "subtitle": "mash - Antigravity - Review Changes",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:31 AM",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "Meet \u2013 nzq-vbeb-hfg - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:31 AM",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Mash",
+      "subtitle": "Mash",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:31 AM",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "Meet \u2013 nzq-vbeb-hfg - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:31 AM",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Antigravity",
+      "subtitle": "mash - Antigravity - Review Changes",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:31 AM",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "Meet \u2013 nzq-vbeb-hfg - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:32 AM",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Antigravity",
+      "subtitle": "mash - Antigravity - Review Changes",
+      "icon": "assets/laptop.svg",
+      "timestamp": "10:32 AM",
+      "date": "2026-05-15"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "Cobra Kai | StreameX - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:47 PM",
+      "date": "2026-05-09"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "New Tab - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:53 PM",
+      "date": "2026-05-09"
+    },
+    {
+      "title": "Chromium",
+      "subtitle": "First PC Building Experience - YouTube - Chromium",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:01 PM",
+      "date": "2026-05-10"
+    },
+    {
+      "title": "Chrome",
+      "subtitle": "WhatsApp Web",
+      "icon": "assets/laptop.svg",
+      "timestamp": "06:12 PM",
+      "date": "2026-05-10"
+    }
+  ],
+  "heatmap_data": {
+    "2026-05-15": 4,
+    "2026-05-14": 4,
+    "2026-05-13": 3,
+    "2026-05-12": 4,
+    "2026-05-11": 4,
+    "2026-05-10": 4,
+    "2026-05-09": 4,
+    "2026-05-08": 4,
+    "2026-05-07": 4,
+    "2026-05-05": 4,
+    "2026-05-04": 4,
+    "2026-05-03": 4,
+    "2026-05-01": 4,
+    "2026-04-30": 4,
+    "2026-04-29": 3,
+    "2026-04-28": 3
+  }
+}
